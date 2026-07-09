@@ -16,9 +16,11 @@ import { Switch } from "@/components/ui/switch";
 import { dataStore, useData } from "@/lib/data-store";
 import { useCan, PermissionDenied } from "@/components/permission-guard";
 import type { Relance } from "@/lib/mock-data";
-import { Search, Eye, Send, BellRing, Settings2, DollarSign, Clock, MailCheck, Plus, Pencil, Trash2, CalendarClock } from "lucide-react";
+import { Search, Eye, Send, BellRing, Settings2, DollarSign, Clock, MailCheck, Plus, Pencil, Trash2, CalendarClock, User, Mail, Phone, GraduationCap } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { usePagination } from "@/hooks/use-pagination";
+import { DataPagination } from "@/components/data-pagination";
 
 export const Route = createFileRoute("/_app/relance")({
   head: () => ({ meta: [{ title: "Relance IA — Excel Academy" }] }),
@@ -79,6 +81,7 @@ function RelancePage() {
     (stat === "all" || r.statut === stat) &&
     (q === "" || r.nom.toLowerCase().includes(q.toLowerCase()) || r.email.toLowerCase().includes(q.toLowerCase()))
   ), [relances, q, stat]);
+  const { page, setPage, pageCount, total, pageItems, pageSize } = usePagination(filtered, 8);
 
   const total = relances.reduce((s, r) => s + r.montantDu, 0);
   const nbEscal = relances.filter((r) => r.statut === "Escaladé").length;
@@ -163,7 +166,7 @@ function RelancePage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filtered.map((r) => (
+                      {pageItems.map((r) => (
                         <TableRow key={r.id}>
                           <TableCell><div className="font-medium">{r.nom}</div><div className="text-xs text-muted-foreground">{r.telephone}</div></TableCell>
                           <TableCell className="text-sm">{r.formation}</TableCell>
