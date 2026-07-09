@@ -234,6 +234,7 @@ function FormationsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Formation | null>(null);
   const [form, setForm] = useState<Omit<Formation, "id">>({ nom: "", duree: "", prerequis: "", debouches: "", frais: 0, dateDebut: "" });
+  const { page, setPage, pageCount, total, pageItems, pageSize } = usePagination(formations, 6);
 
   const openCreate = () => { setEditing(null); setForm({ nom: "", duree: "", prerequis: "", debouches: "", frais: 0, dateDebut: "" }); setOpen(true); };
   const openEdit = (f: Formation) => { setEditing(f); setForm(f); setOpen(true); };
@@ -248,7 +249,7 @@ function FormationsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
     <div className="space-y-4">
       {canCreate && <div className="flex justify-end"><Button onClick={openCreate} className="brand-gradient-warm text-white gap-2"><Plus className="h-4 w-4" />Nouvelle formation</Button></div>}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {formations.map((f) => (
+        {pageItems.map((f) => (
           <Card key={f.id} className="hover:shadow-lg transition">
             <div className="h-1 brand-gradient-warm" />
             <CardContent className="pt-6 space-y-2 text-sm">
@@ -268,23 +269,36 @@ function FormationsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
           </Card>
         ))}
       </div>
+      <DataPagination page={page} pageCount={pageCount} total={total} pageSize={pageSize} onChange={setPage} label="formations" />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{editing ? "Modifier" : "Nouvelle"} formation</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div><Label>Nom</Label><Input value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Durée</Label><Input value={form.duree} onChange={(e) => setForm({ ...form, duree: e.target.value })} /></div>
-              <div><Label>Prérequis</Label><Input value={form.prerequis} onChange={(e) => setForm({ ...form, prerequis: e.target.value })} /></div>
-            </div>
-            <div><Label>Débouchés</Label><Input value={form.debouches} onChange={(e) => setForm({ ...form, debouches: e.target.value })} /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Frais annuels (MAD)</Label><Input type="number" value={form.frais} onChange={(e) => setForm({ ...form, frais: +e.target.value })} /></div>
-              <div><Label>Date de rentrée</Label><Input value={form.dateDebut ?? ""} onChange={(e) => setForm({ ...form, dateDebut: e.target.value })} placeholder="05 septembre 2025" /></div>
-            </div>
+        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><GraduationCap className="h-5 w-5 text-[color:var(--brand-accent)]" />{editing ? "Modifier la formation" : "Nouvelle formation"}</DialogTitle>
+            <DialogDescription>Cursus proposé aux familles — utilisé par l'IA de qualification</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5">
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><School className="h-3.5 w-3.5" />Identité du cursus</div>
+              <div><Label className="text-xs">Intitulé</Label><Input value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} placeholder="Bac Sciences Maths" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs flex items-center gap-1"><Clock className="h-3 w-3" />Durée</Label><Input value={form.duree} onChange={(e) => setForm({ ...form, duree: e.target.value })} placeholder="3 ans" /></div>
+                <div><Label className="text-xs flex items-center gap-1"><Calendar className="h-3 w-3" />Date de rentrée</Label><Input value={form.dateDebut ?? ""} onChange={(e) => setForm({ ...form, dateDebut: e.target.value })} placeholder="05 septembre 2025" /></div>
+              </div>
+            </section>
+
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><Tag className="h-3.5 w-3.5" />Contenu pédagogique</div>
+              <div><Label className="text-xs">Prérequis</Label><Input value={form.prerequis} onChange={(e) => setForm({ ...form, prerequis: e.target.value })} placeholder="Bac scientifique / passage 3ème..." /></div>
+              <div><Label className="text-xs">Débouchés</Label><Input value={form.debouches} onChange={(e) => setForm({ ...form, debouches: e.target.value })} placeholder="Grandes écoles, prépas, universités..." /></div>
+            </section>
+
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><DollarSign className="h-3.5 w-3.5" />Tarification</div>
+              <div><Label className="text-xs">Frais annuels (MAD)</Label><Input type="number" min={0} value={form.frais} onChange={(e) => setForm({ ...form, frais: +e.target.value })} /></div>
+            </section>
           </div>
-          <DialogFooter><Button className="brand-gradient-warm text-white" onClick={save}>Enregistrer</Button></DialogFooter>
+          <DialogFooter><Button className="brand-gradient-warm text-white shadow-elegant" onClick={save}>{editing ? "Enregistrer" : "Créer la formation"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
