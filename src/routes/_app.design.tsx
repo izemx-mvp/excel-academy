@@ -21,15 +21,15 @@ export const Route = createFileRoute("/_app/design")({
   component: DesignPage,
 });
 
-const types: Design["type"][] = ["Flyer", "Post réseaux sociaux", "Bannière web", "Affiche", "Texte marketing", "Email campagne"];
-const canaux: Design["canal"][] = ["Instagram", "Facebook", "LinkedIn", "TikTok", "YouTube", "Site web", "Impression", "WhatsApp", "Email"];
+const types: Design["type"][] = ["Flyer", "Bannière web"];
+const canaux: Design["canal"][] = ["Impression", "Site web", "Instagram", "Facebook", "LinkedIn"];
 const statuts: Design["statut"][] = ["Brouillon", "En génération", "Prêt", "Publié"];
 const tons: NonNullable<Design["ton"]>[] = ["Institutionnel", "Chaleureux", "Festif", "Élégant", "Urgent", "Éducatif"];
 
 const FORMATS: Record<Design["type"], string[]> = {
   "Flyer": ["A5 vertical (148×210 mm)", "A4 vertical (210×297 mm)", "A6 (105×148 mm)", "Carré 15×15 cm"],
+  "Bannière web": ["Hero 1600×600", "Bannière 1920×480", "Slider 1440×720", "Sidebar 300×600", "Header email 600×200"],
   "Post réseaux sociaux": ["Instagram Feed 1080×1350", "Instagram Carré 1080×1080", "Story 1080×1920", "Reel/TikTok 1080×1920", "Facebook 1200×630"],
-  "Bannière web": ["Hero 1600×600", "Bannière 1920×480", "Slider 1440×720", "Sidebar 300×600"],
   "Affiche": ["A3 (297×420 mm)", "A2 (420×594 mm)", "Roll-up 85×200 cm"],
   "Texte marketing": ["SMS court (160 car.)", "WhatsApp (300 car.)", "Slogan (max 12 mots)", "Description (500 car.)"],
   "Email campagne": ["Newsletter 600px", "Email transactionnel", "Séquence 3 emails", "Invitation événement"],
@@ -54,15 +54,16 @@ const statClr: Record<Design["statut"], string> = {
 
 const typeIcon: Record<Design["type"], typeof ImageIcon> = {
   "Flyer": ImageIcon,
-  "Post réseaux sociaux": MessageSquare,
   "Bannière web": Megaphone,
+  "Post réseaux sociaux": MessageSquare,
   "Affiche": ImageIcon,
   "Texte marketing": MessageSquare,
   "Email campagne": Mail,
 };
 
+
 function emptyForm(): Omit<Design, "id"> {
-  return { titre: "", type: "Flyer", canal: "Instagram", format: FORMATS["Flyer"][0], brief: "", cible: CIBLES[0], statut: "Brouillon", createdAt: new Date().toISOString().slice(0, 10), contenu: "", slogan: "", cta: "", hashtags: "", palette: "Teal · Or · Blanc", ton: "Institutionnel", dateEvenement: "", imageUrl: "" };
+  return { titre: "", type: "Flyer", canal: "Impression", format: FORMATS["Flyer"][0], brief: "", cible: CIBLES[0], statut: "Brouillon", createdAt: new Date().toISOString().slice(0, 10), contenu: "", slogan: "", cta: "", hashtags: "", palette: "Teal · Or · Blanc", ton: "Institutionnel", dateEvenement: "", imageUrl: "" };
 }
 
 function DesignPage() {
@@ -99,25 +100,16 @@ function DesignPage() {
   const openCreate = () => { setEditing(null); setForm(emptyForm()); setOpen(true); };
   const openEdit = (d: Design) => { setEditing(d); setForm({ ...emptyForm(), ...d }); setOpen(true); setSel(null); };
 
-  const aiGenerate = (brief: string, title?: string): Partial<Design> => {
+  const aiFill = (brief: string, currentTitle?: string): Partial<Design> => {
     const words = brief.split(/\s+/).filter(Boolean);
     const detectedType: Design["type"] =
-      /flyer|affiche imprim/i.test(brief) ? "Flyer" :
-      /post|insta|facebook|reel|story|tiktok/i.test(brief) ? "Post réseaux sociaux" :
-      /banni[eè]re|site web|hero/i.test(brief) ? "Bannière web" :
-      /email|newsletter|mail/i.test(brief) ? "Email campagne" :
-      /whatsapp|sms|slogan|texte/i.test(brief) ? "Texte marketing" :
-      "Post réseaux sociaux";
+      /banni[eè]re|site web|hero|web|slider/i.test(brief) ? "Bannière web" : "Flyer";
     const detectedCanal: Design["canal"] =
+      /site web|web|hero|slider/i.test(brief) ? "Site web" :
       /insta/i.test(brief) ? "Instagram" :
       /facebook/i.test(brief) ? "Facebook" :
       /linkedin/i.test(brief) ? "LinkedIn" :
-      /tiktok/i.test(brief) ? "TikTok" :
-      /youtube/i.test(brief) ? "YouTube" :
-      /whatsapp/i.test(brief) ? "WhatsApp" :
-      /email|mail/i.test(brief) ? "Email" :
-      /imprim|flyer|affiche/i.test(brief) ? "Impression" :
-      "Instagram";
+      "Impression";
     const detectedTon: NonNullable<Design["ton"]> =
       /urgent|derni[eè]re|limit/i.test(brief) ? "Urgent" :
       /f[eê]te|festi|portes ouvertes|joyeu/i.test(brief) ? "Festif" :
@@ -125,42 +117,35 @@ function DesignPage() {
       /parent|famille|bienvenue/i.test(brief) ? "Chaleureux" :
       /cours|p[eé]dagog|apprentissage|programme/i.test(brief) ? "Éducatif" :
       "Institutionnel";
-    const hashtagsPool = ["#ExcelAcademy", "#Marrakech", "#Éducation", "#Bac2026", "#RentréeExcel", "#GrandesÉcoles", "#Réussite"];
     return {
-      titre: title || (words.slice(0, 6).join(" ") + (words.length > 6 ? "…" : "")),
-      brief,
+      titre: currentTitle || (words.slice(0, 6).join(" ") + (words.length > 6 ? "…" : "")),
       type: detectedType,
       canal: detectedCanal,
       format: FORMATS[detectedType][0],
       ton: detectedTon,
-      cible: CIBLES[0],
       slogan: "Excel Academy — l'excellence à votre portée",
       cta: /inscri/i.test(brief) ? "Inscrivez-vous dès maintenant" : "Contactez-nous pour en savoir plus",
-      hashtags: hashtagsPool.slice(0, 5).join(" "),
+      hashtags: "#ExcelAcademy #Marrakech #Éducation #Bac2026 #RentréeExcel",
       palette: "Teal · Or · Blanc",
-      statut: "En génération",
-      createdAt: new Date().toISOString().slice(0, 10),
-      contenu: `✨ ${title || "Excel Academy"}\n\n${brief}\n\n📍 Marrakech · 0524 33 21 10 · excelacademy.ma`,
+      contenu: `✨ ${currentTitle || "Excel Academy"}\n\n${brief}\n\n📍 Marrakech · 0524 33 21 10 · excelacademy.ma`,
     };
   };
 
-  const save = () => {
-    if (editing) {
-      if (!form.titre || !form.brief) { toast.error("Titre et brief requis"); return; }
-      dataStore.updateDesign(editing.id, form);
-      toast.success("Design mis à jour");
-      setOpen(false);
-      return;
-    }
-    if (!form.brief.trim()) { toast.error("Décrivez votre besoin pour l'IA"); return; }
+  const runAiFill = () => {
+    if (!form.brief.trim()) { toast.error("Décrivez d'abord votre besoin dans le brief"); return; }
     setGenerating(true);
-    const generated = aiGenerate(form.brief, form.titre);
     setTimeout(() => {
-      dataStore.addDesign({ ...emptyForm(), ...generated } as Omit<Design, "id">);
+      setForm((f) => ({ ...f, ...aiFill(f.brief, f.titre) }));
       setGenerating(false);
-      setOpen(false);
-      toast.success("Design généré par l'IA ✨");
-    }, 900);
+      toast.success("Champs pré-remplis par l'IA ✨");
+    }, 700);
+  };
+
+  const save = () => {
+    if (!form.titre || !form.brief) { toast.error("Titre et brief requis"); return; }
+    if (editing) { dataStore.updateDesign(editing.id, form); toast.success("Design mis à jour"); }
+    else { dataStore.addDesign(form); toast.success("Design créé"); }
+    setOpen(false);
   };
 
   const regenerate = (d: Design) => {
@@ -172,6 +157,7 @@ function DesignPage() {
       setGenerating(false);
     }, 1200);
   };
+
 
   const onTypeChange = (v: Design["type"]) => setForm({ ...form, type: v, format: FORMATS[v][0] });
 
@@ -330,86 +316,79 @@ function DesignPage() {
             <DialogDescription>{editing ? "Ajustez les détails générés par l'IA" : "Décrivez simplement votre besoin — l'IA choisit le format, le ton, le slogan, les hashtags et rédige le contenu."}</DialogDescription>
           </DialogHeader>
 
-          {!editing ? (
-            <div className="space-y-5">
-              <div className="rounded-2xl border-2 border-dashed border-[color:var(--brand-accent)]/40 bg-gradient-to-br from-[color:var(--brand-accent)]/5 to-[color:var(--brand-cyan)]/5 p-5 space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl brand-gradient-warm flex items-center justify-center shadow"><Sparkles className="h-5 w-5 text-white" /></div>
-                  <div>
-                    <div className="font-semibold text-sm">Assistant Design IA</div>
-                    <div className="text-xs text-muted-foreground">Un seul champ suffit pour démarrer</div>
+          <div className="space-y-5">
+            {/* AI assist card — shown for new creations */}
+            {!editing && (
+              <div className="relative overflow-hidden rounded-2xl border border-[color:var(--brand-accent)]/30 bg-gradient-to-br from-[color:var(--brand-accent)]/10 via-white/50 to-[color:var(--brand-cyan)]/10 p-5 space-y-3">
+                <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-[color:var(--brand-accent)]/20 blur-2xl" />
+                <div className="relative flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl brand-gradient-warm flex items-center justify-center shadow-elegant"><Sparkles className="h-5 w-5 text-white" /></div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-sm">Assistant IA</div>
+                    <div className="text-xs text-muted-foreground">Décrivez votre besoin dans le brief, l'IA remplit le reste. Vous pouvez tout ajuster ensuite.</div>
                   </div>
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold">Titre (optionnel)</Label>
-                  <Input value={form.titre} onChange={(e) => setForm({ ...form, titre: e.target.value })} placeholder="ex : Portes ouvertes 20 septembre" />
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold">Décrivez ce que vous voulez créer <span className="text-red-500">*</span></Label>
-                  <Textarea
-                    rows={6}
-                    value={form.brief}
-                    onChange={(e) => setForm({ ...form, brief: e.target.value })}
-                    placeholder="ex : Post Instagram festif pour annoncer nos portes ouvertes du 20 septembre au campus Guéliz. Mettre en avant les visites guidées et les cadeaux à gagner. Cible : familles de Marrakech."
-                    className="resize-none"
-                  />
-                  <div className="mt-1 text-[11px] text-muted-foreground">💡 L'IA détectera automatiquement le type de support, le canal, le ton, le format, le slogan, le CTA, les hashtags et rédigera le contenu.</div>
+                  <Button size="sm" onClick={runAiFill} disabled={generating} className="brand-gradient-warm text-white gap-1 shadow">
+                    {generating ? <Sparkles className="h-4 w-4 animate-pulse" /> : <Wand2 className="h-4 w-4" />}
+                    {generating ? "IA…" : "Pré-remplir avec l'IA"}
+                  </Button>
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="space-y-5">
-              <div className="relative h-40 rounded-xl overflow-hidden border bg-muted">
-                {form.imageUrl ? (
-                  <img src={form.imageUrl} alt="Aperçu" className="absolute inset-0 h-full w-full object-cover" />
-                ) : (
-                  <div className="absolute inset-0 brand-gradient-mesh flex items-center justify-center text-white/90">
-                    {(() => { const I = typeIcon[form.type]; return <I className="h-16 w-16" />; })()}
-                  </div>
-                )}
-                <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent text-white">
-                  <div className="text-sm font-semibold line-clamp-1">{form.titre || "Titre de la création"}</div>
-                  {form.slogan && <div className="text-xs italic opacity-90 line-clamp-1">“{form.slogan}”</div>}
+            )}
+
+            {/* Live preview */}
+            <div className="relative h-44 rounded-2xl overflow-hidden border bg-muted shadow-elegant">
+              {form.imageUrl ? (
+                <img src={form.imageUrl} alt="Aperçu" className="absolute inset-0 h-full w-full object-cover" />
+              ) : (
+                <div className="absolute inset-0 brand-gradient-mesh flex items-center justify-center text-white/90">
+                  {(() => { const I = typeIcon[form.type]; return <I className="h-16 w-16" />; })()}
                 </div>
+              )}
+              <div className="absolute top-2 left-2 flex gap-1">
+                <Badge className="bg-white/95 text-foreground border-transparent shadow gap-1">{(() => { const I = typeIcon[form.type]; return <I className="h-3 w-3" />; })()}{form.type}</Badge>
               </div>
-
-              <section className="space-y-3">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Support</div>
-                <div><Label className="text-xs">Titre interne</Label><Input value={form.titre} onChange={(e) => setForm({ ...form, titre: e.target.value })} /></div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label className="text-xs">Type de support</Label><Select value={form.type} onValueChange={(v) => onTypeChange(v as Design["type"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{types.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
-                  <div><Label className="text-xs">Canal</Label><Select value={form.canal} onValueChange={(v) => setForm({ ...form, canal: v as Design["canal"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{canaux.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
-                  <div><Label className="text-xs">Format</Label><Select value={form.format} onValueChange={(v) => setForm({ ...form, format: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{FORMATS[form.type].map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select></div>
-                  <div><Label className="text-xs">Statut</Label><Select value={form.statut} onValueChange={(v) => setForm({ ...form, statut: v as Design["statut"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{statuts.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
-                </div>
-              </section>
-
-              <section className="space-y-3">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2"><Target className="h-3.5 w-3.5" />Cible & Ton</div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label className="text-xs">Cible</Label><Select value={form.cible} onValueChange={(v) => setForm({ ...form, cible: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CIBLES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
-                  <div><Label className="text-xs">Ton</Label><Select value={form.ton ?? "Institutionnel"} onValueChange={(v) => setForm({ ...form, ton: v as Design["ton"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{tons.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
-                  <div><Label className="text-xs flex items-center gap-1"><Palette className="h-3 w-3" />Palette</Label><Input value={form.palette ?? ""} onChange={(e) => setForm({ ...form, palette: e.target.value })} /></div>
-                  <div><Label className="text-xs flex items-center gap-1"><Calendar className="h-3 w-3" />Date événement</Label><Input type="date" value={form.dateEvenement ?? ""} onChange={(e) => setForm({ ...form, dateEvenement: e.target.value })} /></div>
-                </div>
-              </section>
-
-              <section className="space-y-3">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Message</div>
-                <div><Label className="text-xs">Slogan</Label><Input value={form.slogan ?? ""} onChange={(e) => setForm({ ...form, slogan: e.target.value })} /></div>
-                <div><Label className="text-xs">Call-to-action</Label><Input value={form.cta ?? ""} onChange={(e) => setForm({ ...form, cta: e.target.value })} /></div>
-                <div><Label className="text-xs flex items-center gap-1"><Hash className="h-3 w-3" />Hashtags</Label><Input value={form.hashtags ?? ""} onChange={(e) => setForm({ ...form, hashtags: e.target.value })} /></div>
-                <div><Label className="text-xs">Brief</Label><Textarea rows={3} value={form.brief} onChange={(e) => setForm({ ...form, brief: e.target.value })} /></div>
-              </section>
-
-              <section className="space-y-3">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2"><Upload className="h-3.5 w-3.5" />Visuel & Budget</div>
-                <div><Label className="text-xs">URL image</Label><Input value={form.imageUrl ?? ""} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} /></div>
-                <div><Label className="text-xs flex items-center gap-1"><DollarSign className="h-3 w-3" />Budget (MAD)</Label><Input type="number" min={0} value={form.budget ?? 0} onChange={(e) => setForm({ ...form, budget: +e.target.value })} /></div>
-                <div><Label className="text-xs">Contenu généré</Label><Textarea rows={3} value={form.contenu ?? ""} onChange={(e) => setForm({ ...form, contenu: e.target.value })} /></div>
-              </section>
+              <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/70 to-transparent text-white">
+                <div className="text-sm font-semibold line-clamp-1">{form.titre || "Titre de la création"}</div>
+                {form.slogan && <div className="text-xs italic opacity-90 line-clamp-1">“{form.slogan}”</div>}
+              </div>
             </div>
-          )}
+
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><ImageIcon className="h-3.5 w-3.5" />Support</div>
+              <div><Label className="text-xs">Titre interne <span className="text-red-500">*</span></Label><Input value={form.titre} onChange={(e) => setForm({ ...form, titre: e.target.value })} placeholder="ex: Portes ouvertes — 20 septembre" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Type de support</Label><Select value={form.type} onValueChange={(v) => onTypeChange(v as Design["type"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{types.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
+                <div><Label className="text-xs">Canal de diffusion</Label><Select value={form.canal} onValueChange={(v) => setForm({ ...form, canal: v as Design["canal"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{canaux.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+                <div><Label className="text-xs">Format</Label><Select value={form.format} onValueChange={(v) => setForm({ ...form, format: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{FORMATS[form.type].map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select></div>
+                <div><Label className="text-xs">Statut</Label><Select value={form.statut} onValueChange={(v) => setForm({ ...form, statut: v as Design["statut"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{statuts.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
+              </div>
+            </section>
+
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><Target className="h-3.5 w-3.5" />Cible & Ton</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Audience cible</Label><Select value={form.cible} onValueChange={(v) => setForm({ ...form, cible: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CIBLES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+                <div><Label className="text-xs">Ton</Label><Select value={form.ton ?? "Institutionnel"} onValueChange={(v) => setForm({ ...form, ton: v as Design["ton"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{tons.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
+                <div><Label className="text-xs flex items-center gap-1"><Palette className="h-3 w-3" />Palette</Label><Input value={form.palette ?? ""} onChange={(e) => setForm({ ...form, palette: e.target.value })} placeholder="Teal · Or · Blanc" /></div>
+                <div><Label className="text-xs flex items-center gap-1"><Calendar className="h-3 w-3" />Date événement</Label><Input type="date" value={form.dateEvenement ?? ""} onChange={(e) => setForm({ ...form, dateEvenement: e.target.value })} /></div>
+              </div>
+            </section>
+
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><MessageSquare className="h-3.5 w-3.5" />Message</div>
+              <div><Label className="text-xs">Slogan / accroche</Label><Input value={form.slogan ?? ""} onChange={(e) => setForm({ ...form, slogan: e.target.value })} placeholder="Cap sur les grandes écoles" /></div>
+              <div><Label className="text-xs">Call-to-action</Label><Input value={form.cta ?? ""} onChange={(e) => setForm({ ...form, cta: e.target.value })} placeholder="Inscrivez-vous avant le 30 août" /></div>
+              <div><Label className="text-xs flex items-center gap-1"><Hash className="h-3 w-3" />Hashtags</Label><Input value={form.hashtags ?? ""} onChange={(e) => setForm({ ...form, hashtags: e.target.value })} placeholder="#ExcelAcademy #Marrakech #Bac2026" /></div>
+              <div><Label className="text-xs">Brief détaillé pour l'IA <span className="text-red-500">*</span></Label><Textarea rows={3} value={form.brief} onChange={(e) => setForm({ ...form, brief: e.target.value })} placeholder="Ce que doit contenir le visuel : arguments, offres, éléments obligatoires..." className="resize-none" /></div>
+            </section>
+
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><Upload className="h-3.5 w-3.5" />Visuel & Budget</div>
+              <div><Label className="text-xs">URL image de référence</Label><Input value={form.imageUrl ?? ""} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} placeholder="https://..." /></div>
+              <div><Label className="text-xs flex items-center gap-1"><DollarSign className="h-3 w-3" />Budget campagne (MAD)</Label><Input type="number" min={0} value={form.budget ?? 0} onChange={(e) => setForm({ ...form, budget: +e.target.value })} /></div>
+              <div><Label className="text-xs">Contenu généré</Label><Textarea rows={3} value={form.contenu ?? ""} onChange={(e) => setForm({ ...form, contenu: e.target.value })} placeholder="Sera rempli par l'IA ou saisissez le texte final." className="resize-none" /></div>
+            </section>
+          </div>
 
           <DialogFooter className="flex-wrap gap-2">
             {canDelete && editing && (
@@ -421,10 +400,11 @@ function DesignPage() {
                 </AlertDialogContent>
               </AlertDialog>
             )}
-            <Button className="brand-gradient-warm text-white gap-1" onClick={save} disabled={generating}>
-              {generating ? (<><Sparkles className="h-4 w-4 animate-pulse" />Génération en cours…</>) : editing ? (<><Wand2 className="h-4 w-4" />Enregistrer</>) : (<><Sparkles className="h-4 w-4" />Générer avec l'IA</>)}
+            <Button className="brand-gradient-warm text-white gap-1 shadow-elegant" onClick={save} disabled={generating}>
+              <Wand2 className="h-4 w-4" />{editing ? "Enregistrer" : "Créer la campagne"}
             </Button>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
 
