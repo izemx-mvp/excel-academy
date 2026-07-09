@@ -112,6 +112,9 @@ export const documents = [
   { nom: "Plan des zones transport", type: "PDF", categorie: "Vie scolaire", taille: "780 KB" },
 ];
 
+export const PHASES = ["Nouveau", "Contacté", "RDV planifié", "Visite école", "Gagné", "Perdu", "Abandonné"] as const;
+export type PhaseProspect = typeof PHASES[number];
+
 export type Qualification = {
   id: string;
   nom: string;
@@ -121,17 +124,20 @@ export type Qualification = {
   budget: string;
   score: number;
   statut: "Chaud" | "Tiède" | "Froid";
+  phase: PhaseProspect;
   date: string;
   notes: string;
+  motifPerte?: string;
 };
 
 export const qualifications: Qualification[] = [
-  { id: "q1", nom: "Sara Benjelloun", telephone: "0661 234 567", email: "sara.b@gmail.com", formation: "Bac Sciences Maths", budget: "30-35k MAD", score: 92, statut: "Chaud", date: "2026-07-08", notes: "Très motivée, demande visite de l'établissement" },
-  { id: "q2", nom: "Ahmed Tazi", telephone: "0662 345 678", email: "a.tazi@gmail.com", formation: "Classe Préparatoire", budget: "40-50k MAD", score: 88, statut: "Chaud", date: "2026-07-07", notes: "Frère déjà inscrit" },
-  { id: "q3", nom: "Leila Fassi", telephone: "0663 456 789", email: "leila.f@outlook.com", formation: "Bac Économie", budget: "25-30k MAD", score: 65, statut: "Tiède", date: "2026-07-06", notes: "Compare avec autre école" },
-  { id: "q4", nom: "Mehdi Alaoui", telephone: "0664 567 890", email: "mehdi.a@yahoo.fr", formation: "Bac Sciences Exp.", budget: "25-30k MAD", score: 71, statut: "Tiède", date: "2026-07-05", notes: "Attente de bourse" },
-  { id: "q5", nom: "Yasmine Chraibi", telephone: "0665 678 901", email: "y.chraibi@gmail.com", formation: "Collège", budget: "20-25k MAD", score: 45, statut: "Froid", date: "2026-07-04", notes: "Simple demande d'info" },
-  { id: "q6", nom: "Omar Bennis", telephone: "0666 789 012", email: "omar.bennis@gmail.com", formation: "Bac Sciences Maths", budget: "30-35k MAD", score: 84, statut: "Chaud", date: "2026-07-03", notes: "Prêt à s'inscrire cette semaine" },
+  { id: "q1", nom: "Sara Benjelloun", telephone: "0661 234 567", email: "sara.b@gmail.com", formation: "Bac Sciences Maths", budget: "30-35k MAD", score: 92, statut: "Chaud", phase: "RDV planifié", date: "2026-07-08", notes: "Très motivée, demande visite de l'établissement" },
+  { id: "q2", nom: "Ahmed Tazi", telephone: "0662 345 678", email: "a.tazi@gmail.com", formation: "Classe Préparatoire", budget: "40-50k MAD", score: 88, statut: "Chaud", phase: "Visite école", date: "2026-07-07", notes: "Frère déjà inscrit" },
+  { id: "q3", nom: "Leila Fassi", telephone: "0663 456 789", email: "leila.f@outlook.com", formation: "Bac Économie", budget: "25-30k MAD", score: 65, statut: "Tiède", phase: "Contacté", date: "2026-07-06", notes: "Compare avec autre école" },
+  { id: "q4", nom: "Mehdi Alaoui", telephone: "0664 567 890", email: "mehdi.a@yahoo.fr", formation: "Bac Sciences Exp.", budget: "25-30k MAD", score: 71, statut: "Tiède", phase: "Contacté", date: "2026-07-05", notes: "Attente de bourse" },
+  { id: "q5", nom: "Yasmine Chraibi", telephone: "0665 678 901", email: "y.chraibi@gmail.com", formation: "Collège", budget: "20-25k MAD", score: 45, statut: "Froid", phase: "Nouveau", date: "2026-07-04", notes: "Simple demande d'info" },
+  { id: "q6", nom: "Omar Bennis", telephone: "0666 789 012", email: "omar.bennis@gmail.com", formation: "Bac Sciences Maths", budget: "30-35k MAD", score: 84, statut: "Chaud", phase: "Gagné", date: "2026-07-03", notes: "Inscription confirmée — acompte versé" },
+  { id: "q7", nom: "Kenza Amrani", telephone: "0667 890 123", email: "k.amrani@gmail.com", formation: "Bac Économie", budget: "25-30k MAD", score: 30, statut: "Froid", phase: "Perdu", date: "2026-07-02", notes: "A choisi une autre école", motifPerte: "Concurrence — prix" },
 ];
 
 export type TicketMessage = {
