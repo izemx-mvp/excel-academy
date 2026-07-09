@@ -14,9 +14,11 @@ import { dataStore, useData } from "@/lib/data-store";
 import { useCan, PermissionDenied } from "@/components/permission-guard";
 import { useUsers, useCurrentUser } from "@/lib/auth-store";
 import type { Reclamation } from "@/lib/mock-data";
-import { Search, Eye, CheckCircle2, ArrowUpRight, AlertTriangle, MessageSquareWarning, Plus, Pencil, Trash2, Send, UserCheck, Lock } from "lucide-react";
+import { Search, Eye, CheckCircle2, ArrowUpRight, AlertTriangle, MessageSquareWarning, Plus, Pencil, Trash2, Send, UserCheck, Lock, User, Mail, Phone, Tag, Calendar, FileText } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { usePagination } from "@/hooks/use-pagination";
+import { DataPagination } from "@/components/data-pagination";
 
 export const Route = createFileRoute("/_app/reclamations")({
   head: () => ({ meta: [{ title: "Réclamations IA — Excel Academy" }] }),
@@ -73,6 +75,7 @@ function ReclamPage() {
     (stat === "all" || r.statut === stat) &&
     (q === "" || r.nom.toLowerCase().includes(q.toLowerCase()) || r.sujet.toLowerCase().includes(q.toLowerCase()))
   ), [reclamations, q, cat, prio, stat]);
+  const { page, setPage, pageCount, total, pageItems, pageSize } = usePagination(filtered, 8);
 
   const summary = [
     { l: "Nouvelles", v: reclamations.filter((i) => i.statut === "Nouvelle").length, c: "bg-blue-500", i: MessageSquareWarning },
@@ -148,7 +151,7 @@ function ReclamPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((r) => (
+                  {pageItems.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell><div className="font-medium">{r.nom}</div><div className="text-xs text-muted-foreground">{r.email}</div></TableCell>
                       <TableCell className="max-w-[220px] truncate">{r.sujet}</TableCell>
