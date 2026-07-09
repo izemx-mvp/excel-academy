@@ -57,6 +57,7 @@ function QualificationPage() {
   const { qualifications, formations } = useData();
   const [q, setQ] = useState("");
   const [statut, setStatut] = useState("all");
+  const [phase, setPhase] = useState("all");
   const [formation, setFormation] = useState("all");
   const [sel, setSel] = useState<Qualification | null>(null);
   const [open, setOpen] = useState(false);
@@ -67,9 +68,10 @@ function QualificationPage() {
 
   const filtered = useMemo(() => qualifications.filter((it) =>
     (statut === "all" || it.statut === statut) &&
+    (phase === "all" || it.phase === phase) &&
     (formation === "all" || it.formation === formation) &&
     (q === "" || it.nom.toLowerCase().includes(q.toLowerCase()) || it.email.toLowerCase().includes(q.toLowerCase()) || it.telephone.includes(q))
-  ), [qualifications, q, statut, formation]);
+  ), [qualifications, q, statut, phase, formation]);
   const { page, setPage, pageCount, total, pageItems, pageSize } = usePagination(filtered, 8);
 
   const openCreate = () => { setEditing(null); setForm(emptyForm()); setOpen(true); };
