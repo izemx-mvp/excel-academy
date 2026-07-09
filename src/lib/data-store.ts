@@ -34,7 +34,7 @@ type State = {
   kbBlocks: KbBlock[];
 };
 
-const KEY = "excel_data_v3";
+const KEY = "excel_data_v4";
 
 const seed = (): State => ({
   formations: seedFormations,
