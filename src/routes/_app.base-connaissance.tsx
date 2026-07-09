@@ -7,16 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { dataStore, useData } from "@/lib/data-store";
 import { useCan, PermissionDenied } from "@/components/permission-guard";
-import { FileText, Download, Search, Pencil, Trash2, Plus, School, HelpCircle, Building2, Clock, Mail, Phone, MapPin, Facebook, Instagram, Linkedin, Globe } from "lucide-react";
+import { FileText, Download, Search, Pencil, Trash2, Plus, School, HelpCircle, Building2, Clock, Mail, Phone, MapPin, Facebook, Instagram, Linkedin, Globe, Youtube, MessageCircle, Music2, Share2, User, Calendar } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
-import type { Formation, Contact } from "@/lib/mock-data";
+import type { Formation, Contact, JourSemaine, HoursByDay } from "@/lib/mock-data";
+import { JOURS_SEMAINE, defaultHoursByDay, formatHours } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/_app/base-connaissance")({
   head: () => ({ meta: [{ title: "Base de connaissance IA — Excel Academy" }] }),
@@ -39,6 +41,7 @@ function Base() {
           <div className="flex justify-center">
             <TabsList className="flex-wrap h-auto">
               <TabsTrigger value="etab" className="gap-2"><Building2 className="h-4 w-4" />Établissements & Contacts</TabsTrigger>
+              <TabsTrigger value="social" className="gap-2"><Share2 className="h-4 w-4" />Réseaux sociaux</TabsTrigger>
               <TabsTrigger value="formations" className="gap-2"><School className="h-4 w-4" />Formations & Tarifs</TabsTrigger>
               <TabsTrigger value="faq" className="gap-2"><HelpCircle className="h-4 w-4" />FAQ générale</TabsTrigger>
               <TabsTrigger value="docs" className="gap-2"><FileText className="h-4 w-4" />Documents</TabsTrigger>
@@ -46,6 +49,7 @@ function Base() {
           </div>
 
           <TabsContent value="etab"><ContactsTab canCreate={canCreate} canUpdate={canUpdate} canDelete={canDelete} /></TabsContent>
+          <TabsContent value="social"><SocialTab canUpdate={canUpdate} /></TabsContent>
           <TabsContent value="formations"><FormationsTab canCreate={canCreate} canUpdate={canUpdate} canDelete={canDelete} /></TabsContent>
           <TabsContent value="faq"><FaqTab canCreate={canCreate} canUpdate={canUpdate} canDelete={canDelete} /></TabsContent>
           <TabsContent value="docs"><DocsTab canCreate={canCreate} canUpdate={canUpdate} canDelete={canDelete} /></TabsContent>
@@ -58,7 +62,26 @@ function Base() {
 type CrudProps = { canCreate: boolean; canUpdate: boolean; canDelete: boolean };
 
 function emptyContact(): Contact {
-  return { departement: "", responsable: "", email: "", tel: "", horaires: "", adresse: "", facebook: "", instagram: "", linkedin: "", website: "" };
+  return { departement: "", responsable: "", email: "", tel: "", horaires: formatHours(defaultHoursByDay()), horairesJours: defaultHoursByDay(), adresse: "" };
+}
+
+function HoursEditor({ value, onChange, disabled }: { value: HoursByDay; onChange: (h: HoursByDay) => void; disabled?: boolean }) {
+  const update = (j: JourSemaine, patch: Partial<HoursByDay[JourSemaine]>) => onChange({ ...value, [j]: { ...value[j], ...patch } });
+  return (
+    <div className="space-y-2">
+      {JOURS_SEMAINE.map((j) => {
+        const h = value[j];
+        return (
+          <div key={j} className={`grid grid-cols-[70px_1fr_1fr_auto] items-center gap-2 rounded-lg border p-2.5 transition ${h.actif ? "bg-background" : "bg-muted/40 opacity-70"}`}>
+            <div className="font-semibold text-xs">{j}</div>
+            <Input type="time" value={h.debut} onChange={(e) => update(j, { debut: e.target.value })} disabled={disabled || !h.actif} className="h-8 text-xs" />
+            <Input type="time" value={h.fin} onChange={(e) => update(j, { fin: e.target.value })} disabled={disabled || !h.actif} className="h-8 text-xs" />
+            <Switch checked={h.actif} onCheckedChange={(v) => update(j, { actif: v })} disabled={disabled} />
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function ContactsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
@@ -68,11 +91,12 @@ function ContactsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
   const [form, setForm] = useState<Contact>(emptyContact());
 
   const openCreate = () => { setEditing(null); setForm(emptyContact()); setOpen(true); };
-  const openEdit = (c: Contact) => { setEditing(c); setForm({ ...emptyContact(), ...c }); setOpen(true); };
+  const openEdit = (c: Contact) => { setEditing(c); setForm({ ...emptyContact(), ...c, horairesJours: c.horairesJours ?? defaultHoursByDay() }); setOpen(true); };
   const save = () => {
     if (!form.departement || !form.responsable) { toast.error("Département et responsable requis"); return; }
-    if (editing) { dataStore.updateContact(editing.departement, form); toast.success("Contact mis à jour"); }
-    else { dataStore.addContact(form); toast.success("Contact ajouté"); }
+    const payload: Contact = { ...form, horaires: formatHours(form.horairesJours, form.horaires) };
+    if (editing) { dataStore.updateContact(editing.departement, payload); toast.success("Contact mis à jour"); }
+    else { dataStore.addContact(payload); toast.success("Contact ajouté"); }
     setOpen(false);
   };
 
@@ -92,16 +116,8 @@ function ContactsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
                     {c.adresse && <div className="flex items-start gap-2"><MapPin className="h-3 w-3 mt-0.5 shrink-0" />{c.adresse}</div>}
                     <div className="flex items-center gap-2"><Mail className="h-3 w-3" />{c.email}</div>
                     <div className="flex items-center gap-2"><Phone className="h-3 w-3" />{c.tel}</div>
-                    <div className="flex items-center gap-2"><Clock className="h-3 w-3" />{c.horaires}</div>
+                    <div className="flex items-start gap-2"><Clock className="h-3 w-3 mt-0.5 shrink-0" />{formatHours(c.horairesJours, c.horaires)}</div>
                   </div>
-                  {(c.website || c.facebook || c.instagram || c.linkedin) && (
-                    <div className="flex gap-2 mt-3">
-                      {c.website && <a href={c.website} target="_blank" rel="noreferrer" className="h-7 w-7 rounded-md border flex items-center justify-center hover:bg-muted"><Globe className="h-3.5 w-3.5" /></a>}
-                      {c.facebook && <a href={c.facebook} target="_blank" rel="noreferrer" className="h-7 w-7 rounded-md border flex items-center justify-center hover:bg-muted"><Facebook className="h-3.5 w-3.5" /></a>}
-                      {c.instagram && <a href={c.instagram} target="_blank" rel="noreferrer" className="h-7 w-7 rounded-md border flex items-center justify-center hover:bg-muted"><Instagram className="h-3.5 w-3.5" /></a>}
-                      {c.linkedin && <a href={c.linkedin} target="_blank" rel="noreferrer" className="h-7 w-7 rounded-md border flex items-center justify-center hover:bg-muted"><Linkedin className="h-3.5 w-3.5" /></a>}
-                    </div>
-                  )}
                 </div>
                 <div className="flex flex-col gap-1">
                   {canUpdate && <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Pencil className="h-3.5 w-3.5" /></Button>}
@@ -114,33 +130,136 @@ function ContactsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing ? "Modifier" : "Nouveau"} centre / contact</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div><Label>Nom du centre / département</Label><Input value={form.departement} onChange={(e) => setForm({ ...form, departement: e.target.value })} disabled={!!editing} /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Responsable</Label><Input value={form.responsable} onChange={(e) => setForm({ ...form, responsable: e.target.value })} /></div>
-              <div><Label>Horaires</Label><Input value={form.horaires} onChange={(e) => setForm({ ...form, horaires: e.target.value })} placeholder="Lun-Ven 8h-17h" /></div>
-              <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-              <div><Label>Téléphone</Label><Input value={form.tel} onChange={(e) => setForm({ ...form, tel: e.target.value })} /></div>
-            </div>
-            <div><Label>Adresse</Label><Input value={form.adresse ?? ""} onChange={(e) => setForm({ ...form, adresse: e.target.value })} placeholder="Av. Mohammed V, Guéliz, Marrakech" /></div>
-            <div className="pt-2 border-t space-y-3">
-              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Réseaux sociaux</div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label className="flex items-center gap-1"><Globe className="h-3 w-3" />Site web</Label><Input value={form.website ?? ""} onChange={(e) => setForm({ ...form, website: e.target.value })} /></div>
-                <div><Label className="flex items-center gap-1"><Facebook className="h-3 w-3" />Facebook</Label><Input value={form.facebook ?? ""} onChange={(e) => setForm({ ...form, facebook: e.target.value })} /></div>
-                <div><Label className="flex items-center gap-1"><Instagram className="h-3 w-3" />Instagram</Label><Input value={form.instagram ?? ""} onChange={(e) => setForm({ ...form, instagram: e.target.value })} /></div>
-                <div><Label className="flex items-center gap-1"><Linkedin className="h-3 w-3" />LinkedIn</Label><Input value={form.linkedin ?? ""} onChange={(e) => setForm({ ...form, linkedin: e.target.value })} /></div>
+        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Building2 className="h-5 w-5 text-[color:var(--brand-accent)]" />{editing ? "Modifier" : "Nouveau"} centre / contact</DialogTitle>
+            <DialogDescription>Informations utilisées par l'agent IA pour orienter les familles</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            <section className="space-y-3">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2"><Building2 className="h-3.5 w-3.5" />Identité du centre</div>
+              <div className="grid grid-cols-1 gap-3">
+                <div><Label className="text-xs">Nom du centre / département</Label><Input value={form.departement} onChange={(e) => setForm({ ...form, departement: e.target.value })} disabled={!!editing} placeholder="Direction Générale — Campus Guéliz" /></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label className="text-xs flex items-center gap-1"><User className="h-3 w-3" />Responsable</Label><Input value={form.responsable} onChange={(e) => setForm({ ...form, responsable: e.target.value })} placeholder="M. / Mme Prénom Nom" /></div>
+                  <div><Label className="text-xs flex items-center gap-1"><MapPin className="h-3 w-3" />Adresse</Label><Input value={form.adresse ?? ""} onChange={(e) => setForm({ ...form, adresse: e.target.value })} placeholder="Av. Mohammed V, Guéliz, Marrakech" /></div>
+                </div>
               </div>
-            </div>
+            </section>
+
+            <section className="space-y-3">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2"><Phone className="h-3.5 w-3.5" />Coordonnées</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs flex items-center gap-1"><Mail className="h-3 w-3" />Email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="contact@excelacademy.ma" /></div>
+                <div><Label className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />Téléphone</Label><Input value={form.tel} onChange={(e) => setForm({ ...form, tel: e.target.value })} placeholder="0524 33 21 10" /></div>
+              </div>
+            </section>
+
+            <section className="space-y-3">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2"><Clock className="h-3.5 w-3.5" />Horaires d'ouverture</div>
+              <HoursEditor value={form.horairesJours ?? defaultHoursByDay()} onChange={(h) => setForm({ ...form, horairesJours: h })} />
+              <div className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground"><Calendar className="inline h-3 w-3 mr-1" />Résumé : <strong>{formatHours(form.horairesJours, "—")}</strong></div>
+            </section>
           </div>
+
+          <DialogFooter><Button className="brand-gradient-warm text-white gap-1" onClick={save}>Enregistrer le centre</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function SocialTab({ canUpdate }: { canUpdate: boolean }) {
+  const { contacts } = useData();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Contact | null>(null);
+  const [form, setForm] = useState<Contact | null>(null);
+
+  const openEdit = (c: Contact) => { setEditing(c); setForm({ ...c }); setOpen(true); };
+  const save = () => {
+    if (!form) return;
+    dataStore.updateContact(editing!.departement, form);
+    toast.success("Réseaux mis à jour");
+    setOpen(false);
+  };
+
+  const socials: Array<{ key: keyof Contact; label: string; Icon: typeof Globe; color: string; placeholder: string }> = [
+    { key: "website", label: "Site web", Icon: Globe, color: "text-slate-700", placeholder: "https://excelacademy.ma" },
+    { key: "facebook", label: "Facebook", Icon: Facebook, color: "text-blue-600", placeholder: "https://facebook.com/..." },
+    { key: "instagram", label: "Instagram", Icon: Instagram, color: "text-pink-600", placeholder: "https://instagram.com/..." },
+    { key: "linkedin", label: "LinkedIn", Icon: Linkedin, color: "text-sky-700", placeholder: "https://linkedin.com/school/..." },
+    { key: "tiktok", label: "TikTok", Icon: Music2, color: "text-slate-900", placeholder: "https://tiktok.com/@..." },
+    { key: "youtube", label: "YouTube", Icon: Youtube, color: "text-red-600", placeholder: "https://youtube.com/@..." },
+    { key: "whatsapp", label: "WhatsApp", Icon: MessageCircle, color: "text-emerald-600", placeholder: "https://wa.me/212..." },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <Card className="brand-gradient-mesh text-white border-0">
+        <CardContent className="p-5 flex items-center gap-4">
+          <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur"><Share2 className="h-6 w-6" /></div>
+          <div>
+            <div className="font-semibold">Présence en ligne d'Excel Academy</div>
+            <div className="text-sm text-white/85">L'agent IA partage ces liens aux familles selon le canal utilisé.</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {contacts.map((c) => {
+          const filled = socials.filter((s) => c[s.key]);
+          return (
+            <Card key={c.departement} className="hover:shadow-lg transition">
+              <CardContent className="pt-6 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="font-semibold text-sm">{c.departement}</div>
+                    <div className="text-xs text-muted-foreground">{filled.length} réseau{filled.length > 1 ? "x" : ""} configuré{filled.length > 1 ? "s" : ""}</div>
+                  </div>
+                  {canUpdate && <Button size="sm" variant="outline" onClick={() => openEdit(c)} className="gap-1"><Pencil className="h-3.5 w-3.5" />Gérer</Button>}
+                </div>
+                {filled.length === 0 ? (
+                  <div className="text-xs text-muted-foreground rounded-lg border border-dashed p-3 text-center">Aucun réseau social pour ce centre</div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {filled.map(({ key, label, Icon, color }) => (
+                      <a key={key} href={c[key] as string} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-lg border p-2 text-xs hover:bg-muted transition">
+                        <Icon className={`h-4 w-4 ${color}`} />
+                        <span className="truncate flex-1">{label}</span>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Share2 className="h-5 w-5 text-[color:var(--brand-accent)]" />Réseaux sociaux</DialogTitle>
+            <DialogDescription>{editing?.departement}</DialogDescription>
+          </DialogHeader>
+          {form && (
+            <div className="space-y-3">
+              {socials.map(({ key, label, Icon, color, placeholder }) => (
+                <div key={key}>
+                  <Label className="text-xs flex items-center gap-1.5"><Icon className={`h-3.5 w-3.5 ${color}`} />{label}</Label>
+                  <Input value={(form[key] as string) ?? ""} onChange={(e) => setForm({ ...form, [key]: e.target.value })} placeholder={placeholder} />
+                </div>
+              ))}
+            </div>
+          )}
           <DialogFooter><Button className="brand-gradient-warm text-white" onClick={save}>Enregistrer</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
 }
+
 
 function FormationsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
   const { formations } = useData();

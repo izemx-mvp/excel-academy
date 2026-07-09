@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { dataStore, useData } from "@/lib/data-store";
 import { useCan, PermissionDenied } from "@/components/permission-guard";
 import type { Design } from "@/lib/mock-data";
-import { Palette, Plus, Pencil, Trash2, Search, Eye, Sparkles, Download, Copy, Image as ImageIcon, MessageSquare, Megaphone, Mail } from "lucide-react";
+import { Palette, Plus, Pencil, Trash2, Search, Sparkles, Download, Copy, Image as ImageIcon, MessageSquare, Megaphone, Mail, Wand2, Target, Calendar, Hash, Tag, DollarSign, Upload } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -22,8 +22,28 @@ export const Route = createFileRoute("/_app/design")({
 });
 
 const types: Design["type"][] = ["Flyer", "Post réseaux sociaux", "Bannière web", "Affiche", "Texte marketing", "Email campagne"];
-const canaux: Design["canal"][] = ["Instagram", "Facebook", "LinkedIn", "Site web", "Impression", "WhatsApp", "Email"];
+const canaux: Design["canal"][] = ["Instagram", "Facebook", "LinkedIn", "TikTok", "YouTube", "Site web", "Impression", "WhatsApp", "Email"];
 const statuts: Design["statut"][] = ["Brouillon", "En génération", "Prêt", "Publié"];
+const tons: NonNullable<Design["ton"]>[] = ["Institutionnel", "Chaleureux", "Festif", "Élégant", "Urgent", "Éducatif"];
+
+const FORMATS: Record<Design["type"], string[]> = {
+  "Flyer": ["A5 vertical (148×210 mm)", "A4 vertical (210×297 mm)", "A6 (105×148 mm)", "Carré 15×15 cm"],
+  "Post réseaux sociaux": ["Instagram Feed 1080×1350", "Instagram Carré 1080×1080", "Story 1080×1920", "Reel/TikTok 1080×1920", "Facebook 1200×630"],
+  "Bannière web": ["Hero 1600×600", "Bannière 1920×480", "Slider 1440×720", "Sidebar 300×600"],
+  "Affiche": ["A3 (297×420 mm)", "A2 (420×594 mm)", "Roll-up 85×200 cm"],
+  "Texte marketing": ["SMS court (160 car.)", "WhatsApp (300 car.)", "Slogan (max 12 mots)", "Description (500 car.)"],
+  "Email campagne": ["Newsletter 600px", "Email transactionnel", "Séquence 3 emails", "Invitation événement"],
+};
+
+const CIBLES = [
+  "Parents 3ème & Tronc Commun",
+  "Élèves Bac Sciences Maths",
+  "Prospects Prépa scientifique",
+  "Familles Marrakech premium",
+  "Anciens élèves / Alumni",
+  "Prospects tièdes qualifiés",
+  "Entreprises partenaires",
+];
 
 const statClr: Record<Design["statut"], string> = {
   Brouillon: "bg-slate-100 text-slate-700 border-slate-200",
@@ -42,7 +62,7 @@ const typeIcon: Record<Design["type"], typeof ImageIcon> = {
 };
 
 function emptyForm(): Omit<Design, "id"> {
-  return { titre: "", type: "Flyer", canal: "Instagram", format: "", brief: "", cible: "", statut: "Brouillon", createdAt: new Date().toISOString().slice(0, 10), contenu: "" };
+  return { titre: "", type: "Flyer", canal: "Instagram", format: FORMATS["Flyer"][0], brief: "", cible: CIBLES[0], statut: "Brouillon", createdAt: new Date().toISOString().slice(0, 10), contenu: "", slogan: "", cta: "", hashtags: "", palette: "Teal · Or · Blanc", ton: "Institutionnel", dateEvenement: "", imageUrl: "" };
 }
 
 function DesignPage() {
@@ -72,12 +92,12 @@ function DesignPage() {
   const summary = [
     { l: "Total créations", v: designs.length, c: "brand-gradient", i: Palette },
     { l: "Prêts à publier", v: designs.filter((d) => d.statut === "Prêt").length, c: "bg-emerald-500", i: Sparkles },
-    { l: "En génération", v: designs.filter((d) => d.statut === "En génération").length, c: "bg-blue-500", i: Sparkles },
+    { l: "En génération", v: designs.filter((d) => d.statut === "En génération").length, c: "bg-blue-500", i: Wand2 },
     { l: "Publiés", v: designs.filter((d) => d.statut === "Publié").length, c: "bg-purple-500", i: Megaphone },
   ];
 
   const openCreate = () => { setEditing(null); setForm(emptyForm()); setOpen(true); };
-  const openEdit = (d: Design) => { setEditing(d); setForm(d); setOpen(true); setSel(null); };
+  const openEdit = (d: Design) => { setEditing(d); setForm({ ...emptyForm(), ...d }); setOpen(true); setSel(null); };
   const save = () => {
     if (!form.titre || !form.brief) { toast.error("Titre et brief requis"); return; }
     if (editing) { dataStore.updateDesign(editing.id, form); toast.success("Design mis à jour"); }
@@ -95,6 +115,8 @@ function DesignPage() {
     }, 1200);
   };
 
+  const onTypeChange = (v: Design["type"]) => setForm({ ...form, type: v, format: FORMATS[v][0] });
+
   return (
     <>
       <PageHeader title="Design IA" description="Générez flyers, visuels et textes marketing pour Excel Academy" />
@@ -106,11 +128,11 @@ function DesignPage() {
             <div>
               <Badge className="bg-white/20 text-white border-white/30 backdrop-blur gap-1"><Sparkles className="h-3 w-3" />Studio de communication</Badge>
               <h2 className="mt-3 text-2xl md:text-3xl font-bold">Créez vos supports en quelques secondes</h2>
-              <p className="mt-1 text-white/80 max-w-xl">Flyers, posts Instagram, bannières site web, campagnes email — l'IA rédige et met en page pour Excel Academy.</p>
+              <p className="mt-1 text-white/85 max-w-xl">Flyers, posts Instagram, bannières site web, campagnes email — l'IA rédige et met en page pour Excel Academy.</p>
             </div>
             {canCreate && (
               <Button className="bg-white text-[color:var(--brand)] hover:bg-white/90 gap-2 shadow-lg" onClick={openCreate}>
-                <Sparkles className="h-4 w-4" />Nouvelle création
+                <Wand2 className="h-4 w-4" />Nouvelle création
               </Button>
             )}
           </div>
@@ -133,32 +155,41 @@ function DesignPage() {
             <div className="flex flex-wrap gap-3">
               <div className="relative flex-1 min-w-[220px]">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Rechercher..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-10" />
+                <Input placeholder="Rechercher une création..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-10" />
               </div>
               <Select value={type} onValueChange={setType}><SelectTrigger className="w-52"><SelectValue placeholder="Type" /></SelectTrigger><SelectContent><SelectItem value="all">Tous types</SelectItem>{types.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
               <Select value={stat} onValueChange={setStat}><SelectTrigger className="w-40"><SelectValue placeholder="Statut" /></SelectTrigger><SelectContent><SelectItem value="all">Tous statuts</SelectItem>{statuts.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
               {canCreate && <Button className="brand-gradient-warm text-white gap-2" onClick={openCreate}><Plus className="h-4 w-4" />Nouveau</Button>}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {filtered.map((d) => {
                 const Icon = typeIcon[d.type];
                 return (
-                  <Card key={d.id} className="overflow-hidden hover:shadow-xl hover:-translate-y-0.5 transition cursor-pointer group" onClick={() => setSel(d)}>
-                    <div className="h-32 brand-gradient-mesh relative flex items-center justify-center">
-                      <Icon className="h-14 w-14 text-white/90 group-hover:scale-110 transition" />
-                      <Badge className="absolute top-2 right-2 bg-white/90 text-foreground border-transparent shadow">{d.canal}</Badge>
+                  <Card key={d.id} className="overflow-hidden hover:shadow-xl hover:-translate-y-0.5 transition cursor-pointer group flex flex-col" onClick={() => setSel(d)}>
+                    <div className="h-44 relative overflow-hidden bg-muted">
+                      {d.imageUrl ? (
+                        <img src={d.imageUrl} alt={d.titre} loading="lazy" className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition duration-500" />
+                      ) : (
+                        <div className="absolute inset-0 brand-gradient-mesh flex items-center justify-center">
+                          <Icon className="h-14 w-14 text-white/90 group-hover:scale-110 transition" />
+                        </div>
+                      )}
+                      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 to-transparent" />
+                      <div className="absolute top-2 left-2 flex gap-1">
+                        <Badge className="bg-white/95 text-foreground border-transparent shadow gap-1"><Icon className="h-3 w-3" />{d.type}</Badge>
+                      </div>
+                      <Badge className="absolute top-2 right-2 bg-white/95 text-foreground border-transparent shadow">{d.canal}</Badge>
+                      <Badge variant="outline" className={"absolute bottom-2 right-2 " + statClr[d.statut]}>{d.statut}</Badge>
                     </div>
-                    <CardContent className="pt-4 pb-4 space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="font-semibold text-sm leading-tight line-clamp-2 flex-1">{d.titre}</div>
-                        <Badge variant="outline" className={statClr[d.statut] + " shrink-0 text-[10px]"}>{d.statut}</Badge>
+                    <CardContent className="pt-4 pb-4 space-y-2 flex-1 flex flex-col">
+                      <div className="font-semibold text-sm leading-tight line-clamp-2">{d.titre}</div>
+                      {d.slogan && <div className="text-xs italic text-[color:var(--brand-accent)] line-clamp-1">“{d.slogan}”</div>}
+                      <div className="text-xs text-muted-foreground line-clamp-2 flex-1">{d.brief}</div>
+                      <div className="flex flex-wrap gap-1 pt-1 border-t">
+                        <Badge variant="secondary" className="text-[10px] gap-1"><Target className="h-2.5 w-2.5" />{d.cible}</Badge>
+                        {d.dateEvenement && <Badge variant="secondary" className="text-[10px] gap-1"><Calendar className="h-2.5 w-2.5" />{d.dateEvenement}</Badge>}
                       </div>
-                      <div className="flex flex-wrap gap-1 text-[11px] text-muted-foreground">
-                        <span>{d.type}</span><span>·</span><span>{d.format}</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground line-clamp-2">{d.brief}</div>
-                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground pt-1 border-t">Cible : {d.cible}</div>
                     </CardContent>
                   </Card>
                 );
@@ -171,24 +202,46 @@ function DesignPage() {
 
       {/* Detail */}
       <Dialog open={!!sel} onOpenChange={(o) => !o && setSel(null)}>
-        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
           {sel && (<>
             <DialogHeader>
-              <DialogTitle>{sel.titre}</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">{(() => { const I = typeIcon[sel.type]; return <I className="h-5 w-5 text-[color:var(--brand-accent)]" />; })()}{sel.titre}</DialogTitle>
               <DialogDescription>{sel.type} · {sel.canal} · {sel.format}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="h-48 rounded-xl brand-gradient-mesh flex items-center justify-center text-white">
-                {(() => { const Icon = typeIcon[sel.type]; return <Icon className="h-20 w-20 opacity-90" />; })()}
+              <div className="h-64 rounded-xl overflow-hidden relative bg-muted">
+                {sel.imageUrl ? (
+                  <img src={sel.imageUrl} alt={sel.titre} className="absolute inset-0 h-full w-full object-cover" />
+                ) : (
+                  <div className="absolute inset-0 brand-gradient-mesh flex items-center justify-center text-white">
+                    {(() => { const Icon = typeIcon[sel.type]; return <Icon className="h-20 w-20 opacity-90" />; })()}
+                  </div>
+                )}
               </div>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="p-3 rounded-xl border bg-muted/30"><div className="text-[10px] uppercase tracking-wider text-muted-foreground">Cible</div><div className="font-medium">{sel.cible}</div></div>
-                <div className="p-3 rounded-xl border bg-muted/30"><div className="text-[10px] uppercase tracking-wider text-muted-foreground">Statut</div><Badge variant="outline" className={statClr[sel.statut]}>{sel.statut}</Badge></div>
+              {sel.slogan && (
+                <div className="rounded-xl border-l-4 border-[color:var(--brand-accent)] bg-[color:var(--brand-accent)]/5 p-3">
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Slogan</div>
+                  <div className="text-base font-semibold italic">“{sel.slogan}”</div>
+                </div>
+              )}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                <div className="p-3 rounded-xl border bg-muted/30"><div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1"><Target className="h-3 w-3" />Cible</div><div className="font-medium">{sel.cible}</div></div>
+                {sel.ton && <div className="p-3 rounded-xl border bg-muted/30"><div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1"><Tag className="h-3 w-3" />Ton</div><div className="font-medium">{sel.ton}</div></div>}
+                {sel.palette && <div className="p-3 rounded-xl border bg-muted/30"><div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1"><Palette className="h-3 w-3" />Palette</div><div className="font-medium">{sel.palette}</div></div>}
+                {sel.dateEvenement && <div className="p-3 rounded-xl border bg-muted/30"><div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" />Événement</div><div className="font-medium">{sel.dateEvenement}</div></div>}
+                {sel.cta && <div className="p-3 rounded-xl border bg-muted/30 col-span-2 md:col-span-1"><div className="text-[10px] uppercase tracking-wider text-muted-foreground">Call-to-action</div><div className="font-medium">{sel.cta}</div></div>}
+                {sel.budget !== undefined && sel.budget > 0 && <div className="p-3 rounded-xl border bg-muted/30"><div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1"><DollarSign className="h-3 w-3" />Budget</div><div className="font-medium">{sel.budget.toLocaleString()} MAD</div></div>}
               </div>
               <div>
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Brief</div>
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Brief créatif</div>
                 <div className="p-3 rounded-lg bg-muted/30 text-sm">{sel.brief}</div>
               </div>
+              {sel.hashtags && (
+                <div>
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1 flex items-center gap-1"><Hash className="h-3 w-3" />Hashtags</div>
+                  <div className="text-sm text-[color:var(--brand-accent)]">{sel.hashtags}</div>
+                </div>
+              )}
               {sel.contenu && (
                 <div>
                   <div className="flex items-center justify-between mb-1">
@@ -202,9 +255,9 @@ function DesignPage() {
               )}
             </div>
             <DialogFooter className="flex-wrap gap-2">
-              {canUpdate && <Button variant="outline" className="gap-1" onClick={() => regenerate(sel)} disabled={generating}><Sparkles className="h-4 w-4" />Régénérer</Button>}
+              {canUpdate && <Button variant="outline" className="gap-1" onClick={() => regenerate(sel)} disabled={generating}><Wand2 className="h-4 w-4" />Régénérer</Button>}
               {canUpdate && <Button variant="outline" onClick={() => openEdit(sel)}><Pencil className="h-4 w-4 mr-1" />Modifier</Button>}
-              {sel.contenu && <Button className="brand-gradient-warm text-white gap-1" onClick={() => toast.success("Export lancé")}><Download className="h-4 w-4" />Exporter</Button>}
+              <Button className="brand-gradient-warm text-white gap-1" onClick={() => toast.success("Export lancé")}><Download className="h-4 w-4" />Exporter</Button>
             </DialogFooter>
           </>)}
         </DialogContent>
@@ -212,20 +265,65 @@ function DesignPage() {
 
       {/* Create / Edit */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg max-h-[92vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-[color:var(--brand-accent)]" />{editing ? "Modifier" : "Nouvelle"} création</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div><Label>Titre</Label><Input value={form.titre} onChange={(e) => setForm({ ...form, titre: e.target.value })} placeholder="ex: Portes ouvertes — 20 septembre" /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Type</Label><Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v as Design["type"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{types.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
-              <div><Label>Canal</Label><Select value={form.canal} onValueChange={(v) => setForm({ ...form, canal: v as Design["canal"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{canaux.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
-              <div><Label>Format</Label><Input value={form.format} onChange={(e) => setForm({ ...form, format: e.target.value })} placeholder="1080×1350, A5, Newsletter..." /></div>
-              <div><Label>Statut</Label><Select value={form.statut} onValueChange={(v) => setForm({ ...form, statut: v as Design["statut"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{statuts.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
+        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Wand2 className="h-5 w-5 text-[color:var(--brand-accent)]" />{editing ? "Modifier" : "Nouvelle"} création</DialogTitle>
+            <DialogDescription>Décrivez votre besoin, l'IA propose visuels et textes</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            {/* Preview */}
+            <div className="relative h-40 rounded-xl overflow-hidden border bg-muted">
+              {form.imageUrl ? (
+                <img src={form.imageUrl} alt="Aperçu" className="absolute inset-0 h-full w-full object-cover" />
+              ) : (
+                <div className="absolute inset-0 brand-gradient-mesh flex items-center justify-center text-white/90">
+                  {(() => { const I = typeIcon[form.type]; return <I className="h-16 w-16" />; })()}
+                </div>
+              )}
+              <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent text-white">
+                <div className="text-sm font-semibold line-clamp-1">{form.titre || "Titre de la création"}</div>
+                {form.slogan && <div className="text-xs italic opacity-90 line-clamp-1">“{form.slogan}”</div>}
+              </div>
             </div>
-            <div><Label>Cible</Label><Input value={form.cible} onChange={(e) => setForm({ ...form, cible: e.target.value })} placeholder="Parents Bac SM, prospects tièdes..." /></div>
-            <div><Label>Brief pour l'IA</Label><Textarea rows={3} value={form.brief} onChange={(e) => setForm({ ...form, brief: e.target.value })} placeholder="Ce que doit contenir le visuel / texte : ton, arguments, offre..." /></div>
-            <div><Label>Contenu généré (optionnel)</Label><Textarea rows={4} value={form.contenu ?? ""} onChange={(e) => setForm({ ...form, contenu: e.target.value })} placeholder="Sera rempli automatiquement par l'IA une fois généré." /></div>
+
+            <section className="space-y-3">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Support</div>
+              <div><Label className="text-xs">Titre interne</Label><Input value={form.titre} onChange={(e) => setForm({ ...form, titre: e.target.value })} placeholder="ex: Portes ouvertes — 20 septembre" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Type de support</Label><Select value={form.type} onValueChange={(v) => onTypeChange(v as Design["type"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{types.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
+                <div><Label className="text-xs">Canal de diffusion</Label><Select value={form.canal} onValueChange={(v) => setForm({ ...form, canal: v as Design["canal"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{canaux.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+                <div><Label className="text-xs">Format</Label><Select value={form.format} onValueChange={(v) => setForm({ ...form, format: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{FORMATS[form.type].map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select></div>
+                <div><Label className="text-xs">Statut</Label><Select value={form.statut} onValueChange={(v) => setForm({ ...form, statut: v as Design["statut"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{statuts.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
+              </div>
+            </section>
+
+            <section className="space-y-3">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2"><Target className="h-3.5 w-3.5" />Cible & Ton</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Audience cible</Label><Select value={form.cible} onValueChange={(v) => setForm({ ...form, cible: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CIBLES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+                <div><Label className="text-xs">Ton</Label><Select value={form.ton ?? "Institutionnel"} onValueChange={(v) => setForm({ ...form, ton: v as Design["ton"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{tons.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
+                <div><Label className="text-xs flex items-center gap-1"><Palette className="h-3 w-3" />Palette</Label><Input value={form.palette ?? ""} onChange={(e) => setForm({ ...form, palette: e.target.value })} placeholder="Teal · Or · Blanc" /></div>
+                <div><Label className="text-xs flex items-center gap-1"><Calendar className="h-3 w-3" />Date événement</Label><Input type="date" value={form.dateEvenement ?? ""} onChange={(e) => setForm({ ...form, dateEvenement: e.target.value })} /></div>
+              </div>
+            </section>
+
+            <section className="space-y-3">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Message</div>
+              <div><Label className="text-xs">Slogan / accroche</Label><Input value={form.slogan ?? ""} onChange={(e) => setForm({ ...form, slogan: e.target.value })} placeholder="Cap sur les grandes écoles" /></div>
+              <div><Label className="text-xs">Call-to-action</Label><Input value={form.cta ?? ""} onChange={(e) => setForm({ ...form, cta: e.target.value })} placeholder="Inscrivez-vous avant le 30 août" /></div>
+              <div><Label className="text-xs flex items-center gap-1"><Hash className="h-3 w-3" />Hashtags (réseaux sociaux)</Label><Input value={form.hashtags ?? ""} onChange={(e) => setForm({ ...form, hashtags: e.target.value })} placeholder="#ExcelAcademy #Marrakech #Bac2026" /></div>
+              <div><Label className="text-xs">Brief détaillé pour l'IA</Label><Textarea rows={3} value={form.brief} onChange={(e) => setForm({ ...form, brief: e.target.value })} placeholder="Ce que doit contenir le visuel / texte : arguments, offres, éléments obligatoires..." /></div>
+            </section>
+
+            <section className="space-y-3">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2"><Upload className="h-3.5 w-3.5" />Visuel & Budget</div>
+              <div><Label className="text-xs">URL image de référence (optionnel)</Label><Input value={form.imageUrl ?? ""} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} placeholder="https://..." /></div>
+              <div><Label className="text-xs flex items-center gap-1"><DollarSign className="h-3 w-3" />Budget campagne (MAD)</Label><Input type="number" min={0} value={form.budget ?? 0} onChange={(e) => setForm({ ...form, budget: +e.target.value })} /></div>
+              <div><Label className="text-xs">Contenu généré (optionnel)</Label><Textarea rows={3} value={form.contenu ?? ""} onChange={(e) => setForm({ ...form, contenu: e.target.value })} placeholder="Sera rempli automatiquement par l'IA une fois généré." /></div>
+            </section>
           </div>
+
           <DialogFooter className="flex-wrap gap-2">
             {canDelete && editing && (
               <AlertDialog>
@@ -236,7 +334,7 @@ function DesignPage() {
                 </AlertDialogContent>
               </AlertDialog>
             )}
-            <Button className="brand-gradient-warm text-white gap-1" onClick={save}><Sparkles className="h-4 w-4" />{editing ? "Enregistrer" : "Générer avec l'IA"}</Button>
+            <Button className="brand-gradient-warm text-white gap-1" onClick={save}><Wand2 className="h-4 w-4" />{editing ? "Enregistrer" : "Générer avec l'IA"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

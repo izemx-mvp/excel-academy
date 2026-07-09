@@ -22,21 +22,57 @@ export const formations: Formation[] = [
   { id: "f6", nom: "Collège", duree: "3 ans", prerequis: "CEP", debouches: "Lycée", frais: 25000, dateDebut: "05 septembre 2025" },
 ];
 
+export const JOURS_SEMAINE = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"] as const;
+export type JourSemaine = typeof JOURS_SEMAINE[number];
+export type DayHours = { actif: boolean; debut: string; fin: string };
+export type HoursByDay = Record<JourSemaine, DayHours>;
+
+export function defaultHoursByDay(): HoursByDay {
+  return {
+    Lun: { actif: true, debut: "08:00", fin: "17:00" },
+    Mar: { actif: true, debut: "08:00", fin: "17:00" },
+    Mer: { actif: true, debut: "08:00", fin: "17:00" },
+    Jeu: { actif: true, debut: "08:00", fin: "17:00" },
+    Ven: { actif: true, debut: "08:00", fin: "17:00" },
+    Sam: { actif: true, debut: "09:00", fin: "13:00" },
+    Dim: { actif: false, debut: "10:00", fin: "13:00" },
+  };
+}
+
+export function formatHours(h: HoursByDay | undefined, fallback = ""): string {
+  if (!h) return fallback;
+  const parts: string[] = [];
+  let i = 0;
+  while (i < JOURS_SEMAINE.length) {
+    const j = JOURS_SEMAINE[i];
+    if (!h[j].actif) { i++; continue; }
+    let k = i;
+    while (k + 1 < JOURS_SEMAINE.length && h[JOURS_SEMAINE[k + 1]].actif && h[JOURS_SEMAINE[k + 1]].debut === h[j].debut && h[JOURS_SEMAINE[k + 1]].fin === h[j].fin) k++;
+    parts.push(i === k ? `${j} ${h[j].debut}-${h[j].fin}` : `${j}-${JOURS_SEMAINE[k]} ${h[j].debut}-${h[j].fin}`);
+    i = k + 1;
+  }
+  return parts.join(" · ") || "Fermé";
+}
+
 export type Contact = {
   departement: string;
   responsable: string;
   email: string;
   tel: string;
   horaires: string;
+  horairesJours?: HoursByDay;
   adresse?: string;
   facebook?: string;
   instagram?: string;
   linkedin?: string;
+  tiktok?: string;
+  youtube?: string;
+  whatsapp?: string;
   website?: string;
 };
 
 export const contacts: Contact[] = [
-  { departement: "Direction Générale — Campus Guéliz", responsable: "M. Karim El Amrani", email: "direction@excelacademy.ma", tel: "0524 33 21 10", horaires: "Lun-Ven 8h-17h", adresse: "Av. Mohammed V, Guéliz, Marrakech", website: "https://excelacademy.ma", facebook: "https://facebook.com/excelacademy.ma", instagram: "https://instagram.com/excelacademy.ma", linkedin: "https://linkedin.com/school/excelacademy" },
+  { departement: "Direction Générale — Campus Guéliz", responsable: "M. Karim El Amrani", email: "direction@excelacademy.ma", tel: "0524 33 21 10", horaires: "Lun-Ven 8h-17h", adresse: "Av. Mohammed V, Guéliz, Marrakech", website: "https://excelacademy.ma", facebook: "https://facebook.com/excelacademy.ma", instagram: "https://instagram.com/excelacademy.ma", linkedin: "https://linkedin.com/school/excelacademy", tiktok: "https://tiktok.com/@excelacademy.ma", youtube: "https://youtube.com/@excelacademy", whatsapp: "https://wa.me/212524332110" },
   { departement: "Scolarité — Campus Hivernage", responsable: "Mme Fatima Zahra", email: "scolarite@excelacademy.ma", tel: "0524 33 21 11", horaires: "Lun-Sam 8h-16h", adresse: "Rue Ibn Aicha, Hivernage, Marrakech" },
   { departement: "Comptabilité", responsable: "M. Youssef Benali", email: "compta@excelacademy.ma", tel: "0524 33 21 12", horaires: "Lun-Ven 9h-16h", adresse: "Av. Mohammed V, Guéliz, Marrakech" },
   { departement: "Vie Scolaire", responsable: "Mme Naima Idrissi", email: "vie-scolaire@excelacademy.ma", tel: "0524 33 21 13", horaires: "Lun-Ven 8h-18h", adresse: "Campus Targa, Marrakech" },
@@ -141,25 +177,39 @@ export const relances: Relance[] = [
   { id: "l6", nom: "Meryem Ouazzani", email: "m.ouazzani@gmail.com", telephone: "0686 666 777", formation: "Primaire", montantDu: 3800, dateEcheance: "2026-07-05", nbRelances: 0, derniereRelance: null, statut: "En attente" },
 ];
 
+import flyerBacSm from "@/assets/design-flyer-bac-sm.jpg";
+import postPortesOuvertes from "@/assets/design-post-portes-ouvertes.jpg";
+import bannerBourses from "@/assets/design-banner-bourses.jpg";
+import emailPrepa from "@/assets/design-email-prepa.jpg";
+import whatsappRelance from "@/assets/design-whatsapp-relance.jpg";
+
 export type Design = {
   id: string;
   titre: string;
   type: "Flyer" | "Post réseaux sociaux" | "Bannière web" | "Affiche" | "Texte marketing" | "Email campagne";
-  canal: "Instagram" | "Facebook" | "LinkedIn" | "Site web" | "Impression" | "WhatsApp" | "Email";
+  canal: "Instagram" | "Facebook" | "LinkedIn" | "Site web" | "Impression" | "WhatsApp" | "Email" | "TikTok" | "YouTube";
   format: string;
   brief: string;
   cible: string;
   statut: "Brouillon" | "En génération" | "Prêt" | "Publié";
   createdAt: string;
+  imageUrl?: string;
+  slogan?: string;
+  cta?: string;
+  hashtags?: string;
+  palette?: string;
+  ton?: "Institutionnel" | "Chaleureux" | "Festif" | "Élégant" | "Urgent" | "Éducatif";
+  dateEvenement?: string;
+  budget?: number;
   contenu?: string;
 };
 
 export const designs: Design[] = [
-  { id: "d1", titre: "Rentrée 2025-2026 — Bac Sciences Maths", type: "Flyer", canal: "Impression", format: "A5 vertical", brief: "Mettre en avant les taux de réussite (98%) et les débouchés vers les grandes écoles d'ingénieurs.", cible: "Parents d'élèves 3ème & Tronc Commun", statut: "Prêt", createdAt: "2026-07-08", contenu: "Excel Academy — Cap sur les grandes écoles.\n98% de réussite au Bac SM · Prépas intégrées · Encadrement premium.\nInscriptions ouvertes · Marrakech · 0524 33 21 11" },
-  { id: "d2", titre: "Portes ouvertes — 20 septembre", type: "Post réseaux sociaux", canal: "Instagram", format: "1080×1350", brief: "Ambiance festive, mettre en avant campus Guéliz.", cible: "Familles Marrakech", statut: "Publié", createdAt: "2026-07-05", contenu: "🎓 Journée Portes Ouvertes\n20 septembre · 9h-17h · Campus Guéliz\nVisites guidées · Rencontre équipe pédagogique · Cadeaux à gagner." },
-  { id: "d3", titre: "Campagne bourses au mérite", type: "Bannière web", canal: "Site web", format: "1600×600", brief: "50 bourses jusqu'à 40% pour les meilleurs dossiers.", cible: "Élèves & parents", statut: "En génération", createdAt: "2026-07-09" },
-  { id: "d4", titre: "Relance inscription — SMS", type: "Texte marketing", canal: "WhatsApp", format: "Court (max 300 car.)", brief: "Ton chaleureux, rappeler date limite d'inscription.", cible: "Prospects tièdes", statut: "Brouillon", createdAt: "2026-07-09" },
-  { id: "d5", titre: "Email — Classes Prépa", type: "Email campagne", canal: "Email", format: "Newsletter", brief: "Convertir les prospects intéressés par la prépa, mettre en avant les 4 admis à Polytechnique.", cible: "Prospects Prépa", statut: "Prêt", createdAt: "2026-07-07", contenu: "Objet : Votre place aux Grandes Écoles commence ici.\n\nExcel Academy vous propose 2 ans de préparation intensive, avec 4 admis à Polytechnique cette année. Rendez-vous pour un entretien gratuit." },
+  { id: "d1", titre: "Rentrée 2025-2026 — Bac Sciences Maths", type: "Flyer", canal: "Impression", format: "A5 vertical (148×210 mm)", brief: "Mettre en avant les taux de réussite (98%) et les débouchés vers les grandes écoles d'ingénieurs.", cible: "Parents d'élèves 3ème & Tronc Commun", statut: "Prêt", createdAt: "2026-07-08", imageUrl: flyerBacSm, slogan: "Cap sur les grandes écoles", cta: "Inscrivez-vous avant le 30 août", palette: "Teal · Or · Blanc", ton: "Institutionnel", dateEvenement: "2025-09-05", budget: 4500, contenu: "Excel Academy — Cap sur les grandes écoles.\n98% de réussite au Bac SM · Prépas intégrées · Encadrement premium.\nInscriptions ouvertes · Marrakech · 0524 33 21 11" },
+  { id: "d2", titre: "Portes ouvertes — 20 septembre", type: "Post réseaux sociaux", canal: "Instagram", format: "1080×1350 (portrait)", brief: "Ambiance festive, mettre en avant campus Guéliz.", cible: "Familles Marrakech", statut: "Publié", createdAt: "2026-07-05", imageUrl: postPortesOuvertes, slogan: "Découvrez votre futur campus", cta: "Réservez votre créneau", hashtags: "#ExcelAcademy #PortesOuvertes #Marrakech #Éducation", palette: "Terracotta · Or · Ciel", ton: "Festif", dateEvenement: "2025-09-20", contenu: "🎓 Journée Portes Ouvertes\n20 septembre · 9h-17h · Campus Guéliz\nVisites guidées · Rencontre équipe pédagogique · Cadeaux à gagner." },
+  { id: "d3", titre: "Campagne bourses au mérite", type: "Bannière web", canal: "Site web", format: "1600×600 (bannière large)", brief: "50 bourses jusqu'à 40% pour les meilleurs dossiers.", cible: "Élèves & parents à haut potentiel", statut: "En génération", createdAt: "2026-07-09", imageUrl: bannerBourses, slogan: "50 bourses jusqu'à 40%", cta: "Déposer mon dossier", palette: "Vert profond · Or", ton: "Élégant", dateEvenement: "2025-08-31" },
+  { id: "d4", titre: "Relance inscription — WhatsApp", type: "Texte marketing", canal: "WhatsApp", format: "Court (max 300 caractères)", brief: "Ton chaleureux, rappeler date limite d'inscription et proposer un rendez-vous.", cible: "Prospects tièdes qualifiés", statut: "Brouillon", createdAt: "2026-07-09", imageUrl: whatsappRelance, slogan: "On garde votre place ?", cta: "Répondez OUI pour un rappel", palette: "Teal WhatsApp", ton: "Chaleureux", contenu: "Bonjour {{prenom}} 👋\nIl reste quelques places en {{formation}} pour la rentrée. On vous garde une entrée jusqu'au vendredi.\nRépondez OUI et on vous rappelle sous 24h.\n— Excel Academy" },
+  { id: "d5", titre: "Email — Classes Prépa", type: "Email campagne", canal: "Email", format: "Newsletter responsive 600px", brief: "Convertir les prospects intéressés par la prépa, mettre en avant les 4 admis à Polytechnique.", cible: "Prospects Prépa", statut: "Prêt", createdAt: "2026-07-07", imageUrl: emailPrepa, slogan: "Votre place aux Grandes Écoles commence ici", cta: "Réserver un entretien gratuit", palette: "Navy · Or", ton: "Élégant", budget: 2000, contenu: "Objet : Votre place aux Grandes Écoles commence ici.\n\nExcel Academy vous propose 2 ans de préparation intensive, avec 4 admis à Polytechnique cette année. Rendez-vous pour un entretien gratuit." },
 ];
 
 export type KbBlock = { id: string; section: string; title: string; body: string };
