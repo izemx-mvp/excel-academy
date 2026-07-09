@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_app/qualification")({
   component: QualificationPage,
 });
 
-const statutIcon = { Chaud: Flame, Tiède: ThermometerSun, Froid: Snowflake } as const;
+
 const statutClr: Record<Qualification["statut"], string> = {
   Chaud: "bg-red-100 text-red-700 border-red-200",
   Tiède: "bg-orange-100 text-orange-700 border-orange-200",
