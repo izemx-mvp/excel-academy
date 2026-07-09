@@ -396,7 +396,7 @@ function formatBytes(n: number): string {
 function DocsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
   const { documents } = useData();
   const [q, setQ] = useState("");
-  const [cat, setCat] = useState("all");
+  
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<typeof documents[number] | null>(null);
   const [form, setForm] = useState({ nom: "", type: "PDF", categorie: "Formations", taille: "" });
