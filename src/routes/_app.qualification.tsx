@@ -294,12 +294,23 @@ function QualificationPage() {
                     <SelectContent>{formations.map((f) => <SelectItem key={f.id} value={f.nom}>{f.nom}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label className="text-xs">Statut du lead</Label>
+                <div><Label className="text-xs">Température</Label>
                   <Select value={form.statut} onValueChange={(v) => setForm({ ...form, statut: v as Qualification["statut"] })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent><SelectItem value="Chaud">🔥 Chaud</SelectItem><SelectItem value="Tiède">🌤️ Tiède</SelectItem><SelectItem value="Froid">❄️ Froid</SelectItem></SelectContent>
                   </Select>
                 </div>
+                <div className="col-span-2"><Label className="text-xs">Phase du prospect</Label>
+                  <Select value={form.phase} onValueChange={(v) => setForm({ ...form, phase: v as Qualification["phase"] })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{PHASES.map((p) => <SelectItem key={p} value={p}>{phaseMeta[p].emoji} {p}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                {(form.phase === "Perdu" || form.phase === "Abandonné") && (
+                  <div className="col-span-2"><Label className="text-xs">Motif ({form.phase.toLowerCase()})</Label>
+                    <Input value={form.motifPerte ?? ""} onChange={(e) => setForm({ ...form, motifPerte: e.target.value })} placeholder="ex: Concurrence prix, changement de projet..." />
+                  </div>
+                )}
               </div>
               <div><div className="flex justify-between mb-1"><Label className="text-xs">Score IA</Label><span className="text-sm font-bold text-[color:var(--brand)]">{form.score}/100</span></div><Slider value={[form.score]} onValueChange={(v) => setForm({ ...form, score: v[0] })} min={0} max={100} /></div>
             </section>
