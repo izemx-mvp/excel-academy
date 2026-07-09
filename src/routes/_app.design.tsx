@@ -100,25 +100,16 @@ function DesignPage() {
   const openCreate = () => { setEditing(null); setForm(emptyForm()); setOpen(true); };
   const openEdit = (d: Design) => { setEditing(d); setForm({ ...emptyForm(), ...d }); setOpen(true); setSel(null); };
 
-  const aiGenerate = (brief: string, title?: string): Partial<Design> => {
+  const aiFill = (brief: string, currentTitle?: string): Partial<Design> => {
     const words = brief.split(/\s+/).filter(Boolean);
     const detectedType: Design["type"] =
-      /flyer|affiche imprim/i.test(brief) ? "Flyer" :
-      /post|insta|facebook|reel|story|tiktok/i.test(brief) ? "Post réseaux sociaux" :
-      /banni[eè]re|site web|hero/i.test(brief) ? "Bannière web" :
-      /email|newsletter|mail/i.test(brief) ? "Email campagne" :
-      /whatsapp|sms|slogan|texte/i.test(brief) ? "Texte marketing" :
-      "Post réseaux sociaux";
+      /banni[eè]re|site web|hero|web|slider/i.test(brief) ? "Bannière web" : "Flyer";
     const detectedCanal: Design["canal"] =
+      /site web|web|hero|slider/i.test(brief) ? "Site web" :
       /insta/i.test(brief) ? "Instagram" :
       /facebook/i.test(brief) ? "Facebook" :
       /linkedin/i.test(brief) ? "LinkedIn" :
-      /tiktok/i.test(brief) ? "TikTok" :
-      /youtube/i.test(brief) ? "YouTube" :
-      /whatsapp/i.test(brief) ? "WhatsApp" :
-      /email|mail/i.test(brief) ? "Email" :
-      /imprim|flyer|affiche/i.test(brief) ? "Impression" :
-      "Instagram";
+      "Impression";
     const detectedTon: NonNullable<Design["ton"]> =
       /urgent|derni[eè]re|limit/i.test(brief) ? "Urgent" :
       /f[eê]te|festi|portes ouvertes|joyeu/i.test(brief) ? "Festif" :
@@ -126,42 +117,35 @@ function DesignPage() {
       /parent|famille|bienvenue/i.test(brief) ? "Chaleureux" :
       /cours|p[eé]dagog|apprentissage|programme/i.test(brief) ? "Éducatif" :
       "Institutionnel";
-    const hashtagsPool = ["#ExcelAcademy", "#Marrakech", "#Éducation", "#Bac2026", "#RentréeExcel", "#GrandesÉcoles", "#Réussite"];
     return {
-      titre: title || (words.slice(0, 6).join(" ") + (words.length > 6 ? "…" : "")),
-      brief,
+      titre: currentTitle || (words.slice(0, 6).join(" ") + (words.length > 6 ? "…" : "")),
       type: detectedType,
       canal: detectedCanal,
       format: FORMATS[detectedType][0],
       ton: detectedTon,
-      cible: CIBLES[0],
       slogan: "Excel Academy — l'excellence à votre portée",
       cta: /inscri/i.test(brief) ? "Inscrivez-vous dès maintenant" : "Contactez-nous pour en savoir plus",
-      hashtags: hashtagsPool.slice(0, 5).join(" "),
+      hashtags: "#ExcelAcademy #Marrakech #Éducation #Bac2026 #RentréeExcel",
       palette: "Teal · Or · Blanc",
-      statut: "En génération",
-      createdAt: new Date().toISOString().slice(0, 10),
-      contenu: `✨ ${title || "Excel Academy"}\n\n${brief}\n\n📍 Marrakech · 0524 33 21 10 · excelacademy.ma`,
+      contenu: `✨ ${currentTitle || "Excel Academy"}\n\n${brief}\n\n📍 Marrakech · 0524 33 21 10 · excelacademy.ma`,
     };
   };
 
-  const save = () => {
-    if (editing) {
-      if (!form.titre || !form.brief) { toast.error("Titre et brief requis"); return; }
-      dataStore.updateDesign(editing.id, form);
-      toast.success("Design mis à jour");
-      setOpen(false);
-      return;
-    }
-    if (!form.brief.trim()) { toast.error("Décrivez votre besoin pour l'IA"); return; }
+  const runAiFill = () => {
+    if (!form.brief.trim()) { toast.error("Décrivez d'abord votre besoin dans le brief"); return; }
     setGenerating(true);
-    const generated = aiGenerate(form.brief, form.titre);
     setTimeout(() => {
-      dataStore.addDesign({ ...emptyForm(), ...generated } as Omit<Design, "id">);
+      setForm((f) => ({ ...f, ...aiFill(f.brief, f.titre) }));
       setGenerating(false);
-      setOpen(false);
-      toast.success("Design généré par l'IA ✨");
-    }, 900);
+      toast.success("Champs pré-remplis par l'IA ✨");
+    }, 700);
+  };
+
+  const save = () => {
+    if (!form.titre || !form.brief) { toast.error("Titre et brief requis"); return; }
+    if (editing) { dataStore.updateDesign(editing.id, form); toast.success("Design mis à jour"); }
+    else { dataStore.addDesign(form); toast.success("Design créé"); }
+    setOpen(false);
   };
 
   const regenerate = (d: Design) => {
@@ -173,6 +157,7 @@ function DesignPage() {
       setGenerating(false);
     }, 1200);
   };
+
 
   const onTypeChange = (v: Design["type"]) => setForm({ ...form, type: v, format: FORMATS[v][0] });
 
