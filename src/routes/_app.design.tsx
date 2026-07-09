@@ -63,7 +63,7 @@ const typeIcon: Record<Design["type"], typeof ImageIcon> = {
 
 
 function emptyForm(): Omit<Design, "id"> {
-  return { titre: "", type: "Flyer", canal: "Instagram", format: FORMATS["Flyer"][0], brief: "", cible: CIBLES[0], statut: "Brouillon", createdAt: new Date().toISOString().slice(0, 10), contenu: "", slogan: "", cta: "", hashtags: "", palette: "Teal · Or · Blanc", ton: "Institutionnel", dateEvenement: "", imageUrl: "" };
+  return { titre: "", type: "Flyer", canal: "Impression", format: FORMATS["Flyer"][0], brief: "", cible: CIBLES[0], statut: "Brouillon", createdAt: new Date().toISOString().slice(0, 10), contenu: "", slogan: "", cta: "", hashtags: "", palette: "Teal · Or · Blanc", ton: "Institutionnel", dateEvenement: "", imageUrl: "" };
 }
 
 function DesignPage() {
