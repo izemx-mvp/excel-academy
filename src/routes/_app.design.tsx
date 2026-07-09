@@ -383,10 +383,8 @@ function DesignPage() {
             </section>
 
             <section className="space-y-3 rounded-xl border bg-white/60 p-4">
-              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><Upload className="h-3.5 w-3.5" />Visuel & Budget</div>
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><Upload className="h-3.5 w-3.5" />Visuel de référence</div>
               <div><Label className="text-xs">URL image de référence</Label><Input value={form.imageUrl ?? ""} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} placeholder="https://..." /></div>
-              <div><Label className="text-xs flex items-center gap-1"><DollarSign className="h-3 w-3" />Budget campagne (MAD)</Label><Input type="number" min={0} value={form.budget ?? 0} onChange={(e) => setForm({ ...form, budget: +e.target.value })} /></div>
-              <div><Label className="text-xs">Contenu généré</Label><Textarea rows={3} value={form.contenu ?? ""} onChange={(e) => setForm({ ...form, contenu: e.target.value })} placeholder="Sera rempli par l'IA ou saisissez le texte final." className="resize-none" /></div>
             </section>
           </div>
 
