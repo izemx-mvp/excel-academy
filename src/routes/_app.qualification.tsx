@@ -117,6 +117,13 @@ function QualificationPage() {
                   <SelectItem value="Froid">Froid</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={phase} onValueChange={setPhase}>
+                <SelectTrigger className="w-44"><SelectValue placeholder="Phase" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes phases</SelectItem>
+                  {PHASES.map((p) => <SelectItem key={p} value={p}>{phaseMeta[p].emoji} {p}</SelectItem>)}
+                </SelectContent>
+              </Select>
               <Select value={formation} onValueChange={setFormation}>
                 <SelectTrigger className="w-52"><SelectValue placeholder="Formation" /></SelectTrigger>
                 <SelectContent>
@@ -133,9 +140,9 @@ function QualificationPage() {
                   <TableRow>
                     <TableHead>Prospect</TableHead>
                     <TableHead>Formation</TableHead>
-                    <TableHead>Budget</TableHead>
                     <TableHead>Score IA</TableHead>
-                    <TableHead>Statut</TableHead>
+                    <TableHead>Température</TableHead>
+                    <TableHead>Phase</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -147,11 +154,10 @@ function QualificationPage() {
                         <div className="text-xs text-muted-foreground">{it.email}</div>
                       </TableCell>
                       <TableCell className="text-sm">{it.formation}</TableCell>
-                      <TableCell className="text-sm">{it.budget}</TableCell>
                       <TableCell><div className="flex items-center gap-2 min-w-[120px]"><Progress value={it.score} className="h-1.5" /><span className="text-xs font-semibold w-8">{it.score}</span></div></TableCell>
                       <TableCell>
                         {canUpdate ? (
-                          <Select value={it.statut} onValueChange={(v) => { dataStore.updateQual(it.id, { statut: v as Qualification["statut"] }); toast.success(`Statut → ${v}`); }}>
+                          <Select value={it.statut} onValueChange={(v) => { dataStore.updateQual(it.id, { statut: v as Qualification["statut"] }); toast.success(`Température → ${v}`); }}>
                             <SelectTrigger className={`h-8 w-28 border ${statutClr[it.statut]}`}><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="Chaud">Chaud</SelectItem>
@@ -161,6 +167,18 @@ function QualificationPage() {
                           </Select>
                         ) : (
                           <Badge variant="outline" className={statutClr[it.statut]}>{it.statut}</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {canUpdate ? (
+                          <Select value={it.phase} onValueChange={(v) => { dataStore.updateQual(it.id, { phase: v as Qualification["phase"] }); toast.success(`Phase → ${v}`); }}>
+                            <SelectTrigger className={`h-8 w-40 border ${phaseMeta[it.phase].clr}`}><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {PHASES.map((p) => <SelectItem key={p} value={p}>{phaseMeta[p].emoji} {p}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant="outline" className={phaseMeta[it.phase].clr}>{phaseMeta[it.phase].emoji} {it.phase}</Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-right space-x-1">
