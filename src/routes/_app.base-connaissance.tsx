@@ -396,14 +396,13 @@ function formatBytes(n: number): string {
 function DocsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
   const { documents } = useData();
   const [q, setQ] = useState("");
-  const [cat, setCat] = useState("all");
+  
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<typeof documents[number] | null>(null);
   const [form, setForm] = useState({ nom: "", type: "PDF", categorie: "Formations", taille: "" });
   const [fileName, setFileName] = useState<string>("");
   const fileRef = useRef<HTMLInputElement>(null);
-  const cats = ["Formations", "Inscriptions", "Vie scolaire", "Marketing", "Autres"];
-  const filtered = useMemo(() => documents.filter((d) => (cat === "all" || d.categorie === cat) && d.nom.toLowerCase().includes(q.toLowerCase())), [documents, q, cat]);
+  const filtered = useMemo(() => documents.filter((d) => d.nom.toLowerCase().includes(q.toLowerCase())), [documents, q]);
   const { page, setPage, pageCount, total, pageItems, pageSize } = usePagination(filtered, 8);
 
   const openCreate = () => {
@@ -418,26 +417,19 @@ function DocsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
     setFileName(file.name);
     setForm((f) => ({
       ...f,
-      nom: f.nom || file.name,
-      type: inferTypeFromName(file.name),
+      nom: f.nom || file.name.replace(/\.pdf$/i, ""),
+      type: "PDF",
       taille: formatBytes(file.size),
     }));
   };
 
   const save = () => {
     if (!form.nom) { toast.error("Nom requis"); return; }
-    if (!editing && !fileName) { toast.error("Sélectionnez un fichier à importer"); return; }
-    if (editing) { dataStore.updateDoc(editing.nom, form); toast.success("Document mis à jour"); }
-    else { dataStore.addDoc(form); toast.success(`« ${form.nom} » importé`); }
+    if (!editing && !fileName) { toast.error("Sélectionnez un PDF à importer"); return; }
+    const payload = { ...form, type: "PDF" };
+    if (editing) { dataStore.updateDoc(editing.nom, payload); toast.success("Document mis à jour"); }
+    else { dataStore.addDoc(payload); toast.success(`« ${payload.nom} » importé`); }
     setOpen(false);
-  };
-
-  const typeColor: Record<string, string> = {
-    PDF: "bg-red-100 text-red-700",
-    Excel: "bg-emerald-100 text-emerald-700",
-    Word: "bg-blue-100 text-blue-700",
-    Image: "bg-purple-100 text-purple-700",
-    Autre: "bg-slate-100 text-slate-700",
   };
 
   return (
@@ -447,23 +439,16 @@ function DocsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Rechercher un document..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-10" />
         </div>
-        <Select value={cat} onValueChange={setCat}>
-          <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-          <SelectContent><SelectItem value="all">Toutes catégories</SelectItem>{cats.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-        </Select>
-        {canCreate && <Button onClick={openCreate} className="brand-gradient-warm text-white gap-2"><Upload className="h-4 w-4" />Importer un document</Button>}
+        {canCreate && <Button onClick={openCreate} className="brand-gradient-warm text-white gap-2"><Upload className="h-4 w-4" />Importer un PDF</Button>}
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         {pageItems.map((d) => (
           <Card key={d.nom} className="hover:shadow-md transition group">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-11 w-11 rounded-lg bg-[color:var(--brand-accent)]/10 flex items-center justify-center shrink-0"><FileText className="h-5 w-5 text-[color:var(--brand-accent)]" /></div>
+              <div className="h-11 w-11 rounded-lg bg-red-100 flex items-center justify-center shrink-0"><FileText className="h-5 w-5 text-red-600" /></div>
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-sm truncate">{d.nom}</div>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="secondary" className={`text-[10px] ${typeColor[d.type] ?? ""}`}>{d.type}</Badge>
-                  <span className="text-xs text-muted-foreground">{d.taille} · {d.categorie}</span>
-                </div>
+                {d.taille && <div className="text-xs text-muted-foreground mt-0.5">{d.taille}</div>}
               </div>
               <Button size="icon" variant="ghost" onClick={() => toast.success(`${d.nom} téléchargé`)}><Download className="h-4 w-4" /></Button>
               {canUpdate && <Button size="icon" variant="ghost" onClick={() => { setEditing(d); setForm(d); setFileName(""); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>}
@@ -478,8 +463,8 @@ function DocsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Upload className="h-5 w-5 text-[color:var(--brand-accent)]" />{editing ? "Modifier le document" : "Importer un document"}</DialogTitle>
-            <DialogDescription>Les fichiers importés sont consultables par l'agent IA</DialogDescription>
+            <DialogTitle className="flex items-center gap-2"><Upload className="h-5 w-5 text-[color:var(--brand-accent)]" />{editing ? "Modifier le document" : "Importer un PDF"}</DialogTitle>
+            <DialogDescription>Les PDF importés sont consultables par l'agent IA</DialogDescription>
           </DialogHeader>
           <div className="space-y-5">
             {!editing && (
@@ -487,39 +472,24 @@ function DocsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
                 <div className="mx-auto h-12 w-12 rounded-xl brand-gradient-warm flex items-center justify-center shadow-elegant mb-3">
                   <Upload className="h-6 w-6 text-white" />
                 </div>
-                <p className="text-sm font-medium">{fileName ? fileName : "Glissez-déposez ou sélectionnez un fichier"}</p>
-                <p className="text-xs text-muted-foreground mt-1">PDF, Word, Excel, images — jusqu'à 20 Mo</p>
+                <p className="text-sm font-medium">{fileName ? fileName : "Glissez-déposez ou sélectionnez un PDF"}</p>
+                <p className="text-xs text-muted-foreground mt-1">PDF uniquement — jusqu'à 20 Mo</p>
                 <input
                   ref={fileRef}
                   type="file"
                   className="hidden"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.webp,.svg"
+                  accept=".pdf,application/pdf"
                   onChange={(e) => onFilePicked(e.target.files?.[0] ?? null)}
                 />
                 <Button variant="outline" size="sm" className="mt-3 gap-1" onClick={() => fileRef.current?.click()}>
-                  <Upload className="h-3.5 w-3.5" />{fileName ? "Changer de fichier" : "Choisir un fichier"}
+                  <Upload className="h-3.5 w-3.5" />{fileName ? "Changer de fichier" : "Choisir un PDF"}
                 </Button>
               </section>
             )}
 
             <section className="space-y-3 rounded-xl border bg-white/60 p-4">
-              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><FileText className="h-3.5 w-3.5" />Détails du document</div>
-              <div><Label className="text-xs">Nom du document</Label><Input value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} placeholder="Brochure Bac SM 2026.pdf" /></div>
-              <div className="grid grid-cols-3 gap-3">
-                <div><Label className="text-xs">Type</Label>
-                  <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="PDF">PDF</SelectItem><SelectItem value="Excel">Excel</SelectItem><SelectItem value="Word">Word</SelectItem><SelectItem value="Image">Image</SelectItem><SelectItem value="Autre">Autre</SelectItem></SelectContent>
-                  </Select>
-                </div>
-                <div><Label className="text-xs">Catégorie</Label>
-                  <Select value={form.categorie} onValueChange={(v) => setForm({ ...form, categorie: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{cats.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div><Label className="text-xs">Taille</Label><Input value={form.taille} onChange={(e) => setForm({ ...form, taille: e.target.value })} placeholder="2.4 Mo" /></div>
-              </div>
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><FileText className="h-3.5 w-3.5" />Nom du document</div>
+              <Input value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} placeholder="Brochure Bac SM 2026" />
             </section>
           </div>
           <DialogFooter><Button className="brand-gradient-warm text-white shadow-elegant gap-1" onClick={save}><Upload className="h-4 w-4" />{editing ? "Enregistrer" : "Importer"}</Button></DialogFooter>
@@ -528,6 +498,7 @@ function DocsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
     </div>
   );
 }
+
 
 
 function ConfirmDelete({ label, onDelete }: { label: string; onDelete: () => void }) {
