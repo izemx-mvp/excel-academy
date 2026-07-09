@@ -16,7 +16,7 @@ import { dataStore, useData } from "@/lib/data-store";
 import { useCan, PermissionDenied } from "@/components/permission-guard";
 import type { Qualification } from "@/lib/mock-data";
 import { PHASES } from "@/lib/mock-data";
-import { Search, Flame, Snowflake, ThermometerSun, Eye, Send, Plus, Pencil, Trash2, Phone, Mail, User, Wallet, GraduationCap, CalendarDays, Sparkles, Trophy, XCircle, CircleDashed, PhoneCall, CalendarClock, School, Ban } from "lucide-react";
+import { Search, Flame, Eye, Send, Plus, Pencil, Trash2, Phone, Mail, User, Wallet, GraduationCap, CalendarDays, Sparkles, Trophy, XCircle, CircleDashed, PhoneCall, CalendarClock, School, Ban } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { usePagination } from "@/hooks/use-pagination";
