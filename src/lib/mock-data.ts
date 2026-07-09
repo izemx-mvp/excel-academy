@@ -62,21 +62,35 @@ export type Contact = {
   horaires: string;
   horairesJours?: HoursByDay;
   adresse?: string;
+};
+
+export type Socials = {
+  website?: string;
   facebook?: string;
   instagram?: string;
   linkedin?: string;
   tiktok?: string;
   youtube?: string;
   whatsapp?: string;
-  website?: string;
+};
+
+export const socials: Socials = {
+  website: "https://excelacademy.ma",
+  facebook: "https://facebook.com/excelacademy.ma",
+  instagram: "https://instagram.com/excelacademy.ma",
+  linkedin: "https://linkedin.com/school/excelacademy",
+  tiktok: "https://tiktok.com/@excelacademy.ma",
+  youtube: "https://youtube.com/@excelacademy",
+  whatsapp: "https://wa.me/212524332110",
 };
 
 export const contacts: Contact[] = [
-  { departement: "Direction Générale — Campus Guéliz", responsable: "M. Karim El Amrani", email: "direction@excelacademy.ma", tel: "0524 33 21 10", horaires: "Lun-Ven 8h-17h", adresse: "Av. Mohammed V, Guéliz, Marrakech", website: "https://excelacademy.ma", facebook: "https://facebook.com/excelacademy.ma", instagram: "https://instagram.com/excelacademy.ma", linkedin: "https://linkedin.com/school/excelacademy", tiktok: "https://tiktok.com/@excelacademy.ma", youtube: "https://youtube.com/@excelacademy", whatsapp: "https://wa.me/212524332110" },
+  { departement: "Direction Générale — Campus Guéliz", responsable: "M. Karim El Amrani", email: "direction@excelacademy.ma", tel: "0524 33 21 10", horaires: "Lun-Ven 8h-17h", adresse: "Av. Mohammed V, Guéliz, Marrakech" },
   { departement: "Scolarité — Campus Hivernage", responsable: "Mme Fatima Zahra", email: "scolarite@excelacademy.ma", tel: "0524 33 21 11", horaires: "Lun-Sam 8h-16h", adresse: "Rue Ibn Aicha, Hivernage, Marrakech" },
   { departement: "Comptabilité", responsable: "M. Youssef Benali", email: "compta@excelacademy.ma", tel: "0524 33 21 12", horaires: "Lun-Ven 9h-16h", adresse: "Av. Mohammed V, Guéliz, Marrakech" },
   { departement: "Vie Scolaire", responsable: "Mme Naima Idrissi", email: "vie-scolaire@excelacademy.ma", tel: "0524 33 21 13", horaires: "Lun-Ven 8h-18h", adresse: "Campus Targa, Marrakech" },
 ];
+
 
 export const faqs = [
   { q: "Quels sont les horaires d'ouverture ?", r: "Nos bureaux sont ouverts du lundi au vendredi de 8h à 17h et le samedi de 8h à 13h.", cat: "Général" },
