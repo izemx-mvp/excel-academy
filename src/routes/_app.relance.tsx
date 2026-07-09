@@ -12,12 +12,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 
 import { dataStore, useData } from "@/lib/data-store";
 import { useCan, PermissionDenied } from "@/components/permission-guard";
 import type { Relance } from "@/lib/mock-data";
-import { Search, Eye, Send, BellRing, Settings2, DollarSign, Clock, MailCheck, Plus, Pencil, Trash2, MessageSquare, CalendarClock } from "lucide-react";
+import { Search, Eye, Send, BellRing, Settings2, DollarSign, Clock, MailCheck, Plus, Pencil, Trash2, CalendarClock } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -35,10 +34,24 @@ const statClr: Record<Relance["statut"], string> = {
 const statuts: Relance["statut"][] = ["En attente", "Relancé", "Payé", "Escaladé"];
 
 function emptyForm(): Omit<Relance, "id"> {
-  return { nom: "", email: "", telephone: "", formation: "", montantDu: 0, dateEcheance: new Date().toISOString().slice(0, 10), nbRelances: 0, derniereRelance: null, statut: "En attente", aRepondu: false, reponseDate: undefined, reponseMessage: "" };
+  return { nom: "", email: "", telephone: "", formation: "", montantDu: 0, dateEcheance: new Date().toISOString().slice(0, 10), nbRelances: 0, derniereRelance: null, statut: "En attente" };
 }
 
-const JOURS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+const JOURS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"] as const;
+type Jour = typeof JOURS[number];
+type DayHours = { actif: boolean; debut: string; fin: string };
+
+function defaultHours(): Record<Jour, DayHours> {
+  return {
+    Lun: { actif: true, debut: "09:00", fin: "18:00" },
+    Mar: { actif: true, debut: "09:00", fin: "18:00" },
+    Mer: { actif: true, debut: "09:00", fin: "18:00" },
+    Jeu: { actif: true, debut: "09:00", fin: "18:00" },
+    Ven: { actif: true, debut: "09:00", fin: "17:00" },
+    Sam: { actif: false, debut: "10:00", fin: "13:00" },
+    Dim: { actif: false, debut: "10:00", fin: "13:00" },
+  };
+}
 
 function RelancePage() {
   const canRead = useCan("relance", "read");
@@ -54,14 +67,11 @@ function RelancePage() {
   const [editing, setEditing] = useState<Relance | null>(null);
   const [form, setForm] = useState<Omit<Relance, "id">>(emptyForm());
 
-  // config
   const [maxRelances, setMaxRelances] = useState([3]);
   const [delaiEntre, setDelaiEntre] = useState([7]);
   const [attentePremiere, setAttentePremiere] = useState([5]);
   const [autoEscalade, setAutoEscalade] = useState(true);
-  const [joursActifs, setJoursActifs] = useState<string[]>(["Lun", "Mar", "Mer", "Jeu", "Ven"]);
-  const [heureDebut, setHeureDebut] = useState("09:00");
-  const [heureFin, setHeureFin] = useState("18:00");
+  const [hours, setHours] = useState<Record<Jour, DayHours>>(defaultHours());
 
   if (!canRead) return (<><PageHeader title="Relance IA" /><PermissionDenied label="consulter les relances" /></>);
 
@@ -90,6 +100,8 @@ function RelancePage() {
     else { dataStore.addRelance(form); toast.success("Dossier ajouté"); }
     setOpen(false);
   };
+
+  const updateHour = (j: Jour, patch: Partial<DayHours>) => setHours((h) => ({ ...h, [j]: { ...h[j], ...patch } }));
 
   return (
     <>
@@ -147,7 +159,6 @@ function RelancePage() {
                         <TableHead>Échéance</TableHead>
                         <TableHead>Relances</TableHead>
                         <TableHead>Statut</TableHead>
-                        <TableHead>Réponse</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -160,11 +171,6 @@ function RelancePage() {
                           <TableCell className="text-xs">{r.dateEcheance}</TableCell>
                           <TableCell><Badge variant="secondary">{r.nbRelances} / {maxRelances[0]}</Badge></TableCell>
                           <TableCell><Badge variant="outline" className={statClr[r.statut]}>{r.statut}</Badge></TableCell>
-                          <TableCell>
-                            {r.aRepondu
-                              ? <Badge className="bg-emerald-100 text-emerald-700 border border-emerald-200 gap-1"><MessageSquare className="h-3 w-3" />Oui</Badge>
-                              : <Badge variant="outline" className="text-muted-foreground">—</Badge>}
-                          </TableCell>
                           <TableCell className="text-right space-x-1">
                             <Button size="icon" variant="ghost" onClick={() => setSel(r)} title="Voir détails"><Eye className="h-4 w-4" /></Button>
                             {canUpdate && <Button size="icon" variant="ghost" onClick={() => relancer(r)} title="Relancer"><Send className="h-4 w-4" /></Button>}
@@ -181,7 +187,7 @@ function RelancePage() {
                           </TableCell>
                         </TableRow>
                       ))}
-                      {filtered.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Aucune relance</TableCell></TableRow>}
+                      {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Aucune relance</TableCell></TableRow>}
                     </TableBody>
                   </Table>
                 </div>
@@ -211,47 +217,37 @@ function RelancePage() {
                     <Slider value={attentePremiere} onValueChange={setAttentePremiere} min={0} max={30} step={1} disabled={!canUpdate} />
                     <p className="text-xs text-muted-foreground mt-1">Délai après la date d'échéance avant la première relance.</p>
                   </div>
+                  <div className="flex items-center justify-between p-3 rounded-xl border bg-amber-50">
+                    <div><Label className="cursor-pointer">Escalade automatique</Label><p className="text-xs text-muted-foreground">Transfert à la comptabilité après épuisement</p></div>
+                    <Switch checked={autoEscalade} onCheckedChange={setAutoEscalade} disabled={!canUpdate} />
+                  </div>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><CalendarClock className="h-5 w-5 text-[color:var(--brand-accent)]" />Jours &amp; créneaux horaires autorisés</CardTitle>
-                  <CardDescription>Les relances ne partent que dans cette fenêtre</CardDescription>
+                  <CardTitle className="flex items-center gap-2"><CalendarClock className="h-5 w-5 text-[color:var(--brand-accent)]" />Heures de réponse par jour</CardTitle>
+                  <CardDescription>Fenêtre horaire d'envoi propre à chaque jour de la semaine</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-5">
-                  <div>
-                    <Label className="mb-2 block">Jours autorisés</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {JOURS.map((j) => {
-                        const active = joursActifs.includes(j);
-                        return (
-                          <button
-                            key={j}
-                            type="button"
-                            disabled={!canUpdate}
-                            onClick={() => setJoursActifs((s) => s.includes(j) ? s.filter((x) => x !== j) : [...s, j])}
-                            className={`h-10 w-14 rounded-xl text-sm font-semibold border transition ${active ? "brand-gradient-warm text-white shadow-md border-transparent" : "bg-muted/40 text-muted-foreground hover:bg-muted"}`}
-                          >{j}</button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label>Heure de début</Label>
-                      <Input type="time" value={heureDebut} onChange={(e) => setHeureDebut(e.target.value)} disabled={!canUpdate} />
-                    </div>
-                    <div>
-                      <Label>Heure de fin</Label>
-                      <Input type="time" value={heureFin} onChange={(e) => setHeureFin(e.target.value)} disabled={!canUpdate} />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between p-3 rounded-xl border bg-amber-50">
-                    <div><Label className="cursor-pointer">Escalade automatique</Label><p className="text-xs text-muted-foreground">Transfert à la comptabilité après épuisement</p></div>
-                    <Switch checked={autoEscalade} onCheckedChange={setAutoEscalade} disabled={!canUpdate} />
-                  </div>
-                  {canUpdate && <Button className="btn-shine brand-gradient-warm text-white w-full" onClick={() => toast.success("Configuration enregistrée")}>Enregistrer la configuration</Button>}
+                <CardContent className="space-y-3">
+                  {JOURS.map((j) => {
+                    const h = hours[j];
+                    return (
+                      <div key={j} className={`grid grid-cols-[80px_1fr_1fr_auto] items-center gap-3 rounded-xl border p-3 transition ${h.actif ? "bg-background" : "bg-muted/40 opacity-70"}`}>
+                        <div className="font-semibold text-sm">{j}</div>
+                        <div>
+                          <Label className="text-[10px] uppercase text-muted-foreground">Début</Label>
+                          <Input type="time" value={h.debut} onChange={(e) => updateHour(j, { debut: e.target.value })} disabled={!canUpdate || !h.actif} />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] uppercase text-muted-foreground">Fin</Label>
+                          <Input type="time" value={h.fin} onChange={(e) => updateHour(j, { fin: e.target.value })} disabled={!canUpdate || !h.actif} />
+                        </div>
+                        <Switch checked={h.actif} onCheckedChange={(v) => updateHour(j, { actif: v })} disabled={!canUpdate} />
+                      </div>
+                    );
+                  })}
+                  {canUpdate && <Button className="btn-shine brand-gradient-warm text-white w-full mt-2" onClick={() => toast.success("Configuration enregistrée")}>Enregistrer la configuration</Button>}
                 </CardContent>
               </Card>
             </div>
@@ -259,7 +255,6 @@ function RelancePage() {
         </Tabs>
       </main>
 
-      {/* Detail */}
       <Dialog open={!!sel} onOpenChange={(o) => !o && setSel(null)}>
         <DialogContent className="max-w-xl">
           {sel && (<>
@@ -271,34 +266,7 @@ function RelancePage() {
                 <div className="p-3 rounded-xl border bg-muted/30"><div className="text-[10px] uppercase tracking-wider text-muted-foreground">Échéance</div><div className="font-medium">{sel.dateEcheance}</div></div>
                 <div className="p-3 rounded-xl border bg-muted/30"><div className="text-[10px] uppercase tracking-wider text-muted-foreground">Dernière relance</div><div className="font-medium">{sel.derniereRelance ?? "—"}</div></div>
               </div>
-              <div className="flex items-center gap-2"><span className="text-xs text-muted-foreground">Statut :</span><Badge variant="outline" className={statClr[sel.statut]}>{sel.statut}</Badge>{sel.aRepondu && <Badge className="bg-emerald-100 text-emerald-700 border border-emerald-200 gap-1"><MessageSquare className="h-3 w-3" />Client a répondu</Badge>}</div>
-
-              <div className="rounded-xl border p-4 space-y-3 bg-gradient-to-br from-[color:var(--brand-cyan)]/5 to-[color:var(--brand-accent)]/5">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-2 text-sm font-semibold"><MessageSquare className="h-4 w-4 text-[color:var(--brand-accent)]" />Réponse du client</Label>
-                  {canUpdate && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <span>A répondu ?</span>
-                      <Switch checked={!!sel.aRepondu} onCheckedChange={(v) => { dataStore.updateRelance(sel.id, { aRepondu: v, reponseDate: v ? (sel.reponseDate ?? new Date().toISOString().slice(0, 10)) : undefined }); setSel({ ...sel, aRepondu: v }); }} />
-                    </div>
-                  )}
-                </div>
-                {sel.aRepondu ? (
-                  <>
-                    <div className="text-xs text-muted-foreground">Date : {sel.reponseDate ?? "—"}</div>
-                    <Textarea
-                      rows={4}
-                      placeholder="Détails de la réponse du client..."
-                      value={sel.reponseMessage ?? ""}
-                      onChange={(e) => { dataStore.updateRelance(sel.id, { reponseMessage: e.target.value }); setSel({ ...sel, reponseMessage: e.target.value }); }}
-                      disabled={!canUpdate}
-                      className="bg-white/70"
-                    />
-                  </>
-                ) : (
-                  <p className="text-sm text-muted-foreground italic">Aucune réponse reçue à ce jour.</p>
-                )}
-              </div>
+              <div className="flex items-center gap-2"><span className="text-xs text-muted-foreground">Statut :</span><Badge variant="outline" className={statClr[sel.statut]}>{sel.statut}</Badge></div>
             </div>
             <DialogFooter className="gap-2">
               {canUpdate && <Button variant="outline" onClick={() => { dataStore.updateRelance(sel.id, { statut: "Payé" }); toast.success("Marqué comme payé"); setSel(null); }}>Marquer payé</Button>}
@@ -308,7 +276,6 @@ function RelancePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Create/Edit */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{editing ? "Modifier" : "Nouveau"} dossier</DialogTitle></DialogHeader>
@@ -327,16 +294,6 @@ function RelancePage() {
                 <SelectContent>{formations.map((f) => <SelectItem key={f.id} value={f.nom}>{f.nom}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-xl border bg-muted/30">
-              <Label className="cursor-pointer flex items-center gap-2"><MessageSquare className="h-4 w-4 text-[color:var(--brand-accent)]" />Le client a répondu ?</Label>
-              <Switch checked={!!form.aRepondu} onCheckedChange={(v) => setForm({ ...form, aRepondu: v, reponseDate: v ? (form.reponseDate ?? new Date().toISOString().slice(0, 10)) : undefined })} />
-            </div>
-            {form.aRepondu && (
-              <>
-                <div><Label>Date de la réponse</Label><Input type="date" value={form.reponseDate ?? ""} onChange={(e) => setForm({ ...form, reponseDate: e.target.value })} /></div>
-                <div><Label>Message du client</Label><Textarea rows={3} value={form.reponseMessage ?? ""} onChange={(e) => setForm({ ...form, reponseMessage: e.target.value })} placeholder="Détail de la réponse..." /></div>
-              </>
-            )}
           </div>
           <DialogFooter><Button className="btn-shine brand-gradient-warm text-white" onClick={save}>Enregistrer</Button></DialogFooter>
         </DialogContent>

@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, BookOpen, UserCheck, MessageSquareWarning, BellRing, LogOut, Users2, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, BookOpen, UserCheck, MessageSquareWarning, BellRing, LogOut, Users2, ShieldCheck, GraduationCap, Palette } from "lucide-react";
 import { LOGO_URL } from "@/lib/brand";
 import { authStore, useCurrentUser, can, type Section } from "@/lib/auth-store";
 import {
@@ -13,6 +13,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,12 +29,15 @@ const aiItems: Item[] = [
   { title: "Qualification IA", url: "/qualification", icon: UserCheck, section: "qualification" },
   { title: "Réclamations IA", url: "/reclamations", icon: MessageSquareWarning, section: "reclamations" },
   { title: "Relance IA", url: "/relance", icon: BellRing, section: "relance" },
+  { title: "Design IA", url: "/design", icon: Palette, section: "design" },
 ];
 
 export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const user = useCurrentUser();
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
 
   const visible = (i: Item) => !i.section || user?.role === "admin" || can(user, i.section, "read");
 
@@ -45,12 +49,18 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center justify-center px-2 py-4 group-data-[collapsible=icon]:py-2">
-          <img
-            src={LOGO_URL}
-            alt="Excel Academy"
-            className="logo-invert h-12 w-auto group-data-[collapsible=icon]:h-8 transition-all"
-          />
+        <div className="flex items-center justify-center px-2 py-4 group-data-[collapsible=icon]:py-3">
+          {collapsed ? (
+            <div className="h-9 w-9 rounded-xl brand-gradient-warm flex items-center justify-center shadow-lg">
+              <GraduationCap className="h-5 w-5 text-white" />
+            </div>
+          ) : (
+            <img
+              src={LOGO_URL}
+              alt="Excel Academy"
+              className="logo-invert h-12 w-auto transition-all"
+            />
+          )}
         </div>
       </SidebarHeader>
 

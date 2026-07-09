@@ -15,6 +15,7 @@ import { Route as AppUtilisateursRouteImport } from './routes/_app.utilisateurs'
 import { Route as AppRelanceRouteImport } from './routes/_app.relance'
 import { Route as AppReclamationsRouteImport } from './routes/_app.reclamations'
 import { Route as AppQualificationRouteImport } from './routes/_app.qualification'
+import { Route as AppDesignRouteImport } from './routes/_app.design'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppBaseConnaissanceRouteImport } from './routes/_app.base-connaissance'
 
@@ -47,6 +48,11 @@ const AppQualificationRoute = AppQualificationRouteImport.update({
   path: '/qualification',
   getParentRoute: () => AppRoute,
 } as any)
+const AppDesignRoute = AppDesignRouteImport.update({
+  id: '/design',
+  path: '/design',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -62,6 +68,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/base-connaissance': typeof AppBaseConnaissanceRoute
   '/dashboard': typeof AppDashboardRoute
+  '/design': typeof AppDesignRoute
   '/qualification': typeof AppQualificationRoute
   '/reclamations': typeof AppReclamationsRoute
   '/relance': typeof AppRelanceRoute
@@ -71,6 +78,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/base-connaissance': typeof AppBaseConnaissanceRoute
   '/dashboard': typeof AppDashboardRoute
+  '/design': typeof AppDesignRoute
   '/qualification': typeof AppQualificationRoute
   '/reclamations': typeof AppReclamationsRoute
   '/relance': typeof AppRelanceRoute
@@ -82,6 +90,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/_app/base-connaissance': typeof AppBaseConnaissanceRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/design': typeof AppDesignRoute
   '/_app/qualification': typeof AppQualificationRoute
   '/_app/reclamations': typeof AppReclamationsRoute
   '/_app/relance': typeof AppRelanceRoute
@@ -93,6 +102,7 @@ export interface FileRouteTypes {
     | '/'
     | '/base-connaissance'
     | '/dashboard'
+    | '/design'
     | '/qualification'
     | '/reclamations'
     | '/relance'
@@ -102,6 +112,7 @@ export interface FileRouteTypes {
     | '/'
     | '/base-connaissance'
     | '/dashboard'
+    | '/design'
     | '/qualification'
     | '/reclamations'
     | '/relance'
@@ -112,6 +123,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/_app/base-connaissance'
     | '/_app/dashboard'
+    | '/_app/design'
     | '/_app/qualification'
     | '/_app/reclamations'
     | '/_app/relance'
@@ -167,6 +179,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppQualificationRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/design': {
+      id: '/_app/design'
+      path: '/design'
+      fullPath: '/design'
+      preLoaderRoute: typeof AppDesignRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/dashboard': {
       id: '/_app/dashboard'
       path: '/dashboard'
@@ -187,6 +206,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppBaseConnaissanceRoute: typeof AppBaseConnaissanceRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppDesignRoute: typeof AppDesignRoute
   AppQualificationRoute: typeof AppQualificationRoute
   AppReclamationsRoute: typeof AppReclamationsRoute
   AppRelanceRoute: typeof AppRelanceRoute
@@ -196,6 +216,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppBaseConnaissanceRoute: AppBaseConnaissanceRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppDesignRoute: AppDesignRoute,
   AppQualificationRoute: AppQualificationRoute,
   AppReclamationsRoute: AppReclamationsRoute,
   AppRelanceRoute: AppRelanceRoute,
@@ -211,13 +232,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

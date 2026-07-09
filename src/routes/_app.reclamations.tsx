@@ -12,8 +12,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Textarea } from "@/components/ui/textarea";
 import { dataStore, useData } from "@/lib/data-store";
 import { useCan, PermissionDenied } from "@/components/permission-guard";
+import { useUsers, useCurrentUser } from "@/lib/auth-store";
 import type { Reclamation } from "@/lib/mock-data";
-import { Search, Eye, CheckCircle2, ArrowUpRight, AlertTriangle, MessageSquareWarning, Plus, Pencil, Trash2 } from "lucide-react";
+import { Search, Eye, CheckCircle2, ArrowUpRight, AlertTriangle, MessageSquareWarning, Plus, Pencil, Trash2, Send, UserCheck, Lock } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -39,7 +40,7 @@ const prios: Reclamation["priorite"][] = ["Basse", "Moyenne", "Haute", "Urgente"
 const stats: Reclamation["statut"][] = ["Nouvelle", "En cours", "Résolue", "Escaladée"];
 
 function emptyForm(): Omit<Reclamation, "id"> {
-  return { nom: "", email: "", telephone: "", categorie: "Administrative", priorite: "Moyenne", statut: "Nouvelle", sujet: "", description: "", date: new Date().toISOString().slice(0, 10) };
+  return { nom: "", email: "", telephone: "", categorie: "Administrative", priorite: "Moyenne", statut: "Nouvelle", sujet: "", description: "", date: new Date().toISOString().slice(0, 10), messages: [] };
 }
 
 function ReclamPage() {
@@ -49,15 +50,20 @@ function ReclamPage() {
   const canDelete = useCan("reclamations", "delete");
 
   const { reclamations } = useData();
+  const users = useUsers();
+  const me = useCurrentUser();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("all");
   const [prio, setPrio] = useState("all");
   const [stat, setStat] = useState("all");
   const [sel, setSel] = useState<Reclamation | null>(null);
-  const [reply, setReply] = useState("");
+  const [msg, setMsg] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Reclamation | null>(null);
   const [form, setForm] = useState<Omit<Reclamation, "id">>(emptyForm());
+
+  // Keep sel in sync with store
+  const current = sel ? reclamations.find((r) => r.id === sel.id) ?? null : null;
 
   if (!canRead) return (<><PageHeader title="Réclamations IA" /><PermissionDenied label="consulter les réclamations" /></>);
 
@@ -75,9 +81,16 @@ function ReclamPage() {
     { l: "Résolues", v: reclamations.filter((i) => i.statut === "Résolue").length, c: "bg-emerald-500", i: CheckCircle2 },
   ];
 
-  const setStatus = (id: string, s: Reclamation["statut"]) => {
-    dataStore.updateReclam(id, { statut: s });
-    if (sel?.id === id) setSel({ ...sel, statut: s });
+  const setStatus = (id: string, s: Reclamation["statut"]) => dataStore.updateReclam(id, { statut: s });
+  const assign = (id: string, userId: string) => {
+    const u = users.find((x) => x.id === userId);
+    dataStore.updateReclam(id, { assigneeId: userId, assigneeNom: u?.nom, statut: "En cours" });
+    toast.success(`Ticket assigné à ${u?.nom}`);
+  };
+  const sendMessage = (r: Reclamation) => {
+    if (!msg.trim()) return;
+    dataStore.addReclamMessage(r.id, { from: "agent", author: me?.nom ?? "Agent", text: msg.trim() });
+    setMsg("");
   };
 
   const openCreate = () => { setEditing(null); setForm(emptyForm()); setOpen(true); };
@@ -89,9 +102,11 @@ function ReclamPage() {
     setOpen(false);
   };
 
+  const ticketOpen = current && current.statut !== "Résolue";
+
   return (
     <>
-      <PageHeader title="Réclamations IA" description="Toutes les réclamations collectées et catégorisées par l'IA" />
+      <PageHeader title="Réclamations IA" description="Tickets clients — assignation, échanges et résolution" />
       <main className="flex-1 p-4 md:p-6 space-y-6">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {summary.map((s) => (
@@ -126,6 +141,7 @@ function ReclamPage() {
                     <TableHead>Sujet</TableHead>
                     <TableHead>Catégorie</TableHead>
                     <TableHead>Priorité</TableHead>
+                    <TableHead>Assigné à</TableHead>
                     <TableHead>Statut</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -138,10 +154,11 @@ function ReclamPage() {
                       <TableCell className="max-w-[220px] truncate">{r.sujet}</TableCell>
                       <TableCell><Badge variant="outline">{r.categorie}</Badge></TableCell>
                       <TableCell><Badge variant="outline" className={prioClr[r.priorite]}>{r.priorite}</Badge></TableCell>
+                      <TableCell className="text-xs">{r.assigneeNom ?? <span className="text-muted-foreground italic">Non assigné</span>}</TableCell>
                       <TableCell><Badge variant="outline" className={statClr[r.statut]}>{r.statut}</Badge></TableCell>
                       <TableCell className="text-xs">{r.date}</TableCell>
                       <TableCell className="text-right space-x-1">
-                        <Button size="icon" variant="ghost" onClick={() => { setSel(r); setReply(""); }}><Eye className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => { setSel(r); setMsg(""); }}><Eye className="h-4 w-4" /></Button>
                         {canUpdate && <Button size="icon" variant="ghost" onClick={() => openEdit(r)}><Pencil className="h-4 w-4" /></Button>}
                         {canDelete && (
                           <AlertDialog>
@@ -155,7 +172,7 @@ function ReclamPage() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Aucune réclamation</TableCell></TableRow>}
+                  {filtered.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Aucune réclamation</TableCell></TableRow>}
                 </TableBody>
               </Table>
             </div>
@@ -163,33 +180,68 @@ function ReclamPage() {
         </Card>
       </main>
 
-      {/* Detail */}
-      <Dialog open={!!sel} onOpenChange={(o) => !o && setSel(null)}>
-        <DialogContent className="max-w-lg">
-          {sel && (<>
+      {/* Ticket detail */}
+      <Dialog open={!!current} onOpenChange={(o) => !o && setSel(null)}>
+        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
+          {current && (<>
             <DialogHeader>
-              <DialogTitle>{sel.sujet}</DialogTitle>
-              <DialogDescription>{sel.nom} · {sel.email} · {sel.telephone}</DialogDescription>
+              <DialogTitle className="flex items-center gap-2">Ticket #{current.id.slice(-4)} · {current.sujet}</DialogTitle>
+              <DialogDescription>{current.nom} · {current.email} · {current.telephone}</DialogDescription>
             </DialogHeader>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
-                <Badge variant="outline">{sel.categorie}</Badge>
-                <Badge variant="outline" className={prioClr[sel.priorite]}>{sel.priorite}</Badge>
-                <Badge variant="outline" className={statClr[sel.statut]}>{sel.statut}</Badge>
+                <Badge variant="outline">{current.categorie}</Badge>
+                <Badge variant="outline" className={prioClr[current.priorite]}>{current.priorite}</Badge>
+                <Badge variant="outline" className={statClr[current.statut]}>{current.statut}</Badge>
               </div>
-              <div className="p-3 rounded-lg bg-muted text-sm">{sel.description}</div>
+
+              <div className="p-3 rounded-lg border-l-4 border-l-[color:var(--brand-accent)] bg-muted/30">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Problème du client</div>
+                <div className="text-sm">{current.description}</div>
+              </div>
+
               {canUpdate && (
-                <div>
-                  <div className="text-xs text-muted-foreground mb-1">Réponse</div>
-                  <Textarea placeholder="Rédigez votre réponse..." value={reply} onChange={(e) => setReply(e.target.value)} rows={3} />
+                <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+                  <div>
+                    <Label className="text-xs flex items-center gap-1 mb-1"><UserCheck className="h-3 w-3" />Assigner à un agent</Label>
+                    <Select value={current.assigneeId ?? ""} onValueChange={(v) => assign(current.id, v)}>
+                      <SelectTrigger><SelectValue placeholder="Choisir un agent..." /></SelectTrigger>
+                      <SelectContent>{users.filter((u) => u.actif).map((u) => <SelectItem key={u.id} value={u.id}>{u.nom} · {u.role}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
                 </div>
               )}
+
+              <div>
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Conversation</div>
+                <div className="rounded-xl border bg-muted/20 p-3 space-y-2 max-h-72 overflow-y-auto">
+                  {(current.messages ?? []).length === 0 && <p className="text-xs text-muted-foreground italic text-center py-4">Aucun message. Démarrez l'échange avec le client ci-dessous.</p>}
+                  {(current.messages ?? []).map((m) => {
+                    const mine = m.from === "agent";
+                    return (
+                      <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                        <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-sm ${mine ? "bg-[color:var(--brand)] text-white rounded-br-sm" : "bg-white border rounded-bl-sm"}`}>
+                          <div className={`text-[10px] uppercase tracking-wider mb-0.5 ${mine ? "text-white/70" : "text-muted-foreground"}`}>{m.author} · {m.at}</div>
+                          <div className="whitespace-pre-wrap">{m.text}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {canUpdate && ticketOpen ? (
+                  <div className="mt-2 flex gap-2">
+                    <Textarea rows={2} placeholder="Répondre au client..." value={msg} onChange={(e) => setMsg(e.target.value)} />
+                    <Button className="brand-gradient-warm text-white shrink-0 h-auto" onClick={() => sendMessage(current)}><Send className="h-4 w-4" /></Button>
+                  </div>
+                ) : (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground p-2 rounded-lg bg-muted/50"><Lock className="h-3.5 w-3.5" />Ticket résolu — conversation verrouillée.</div>
+                )}
+              </div>
             </div>
             <DialogFooter className="flex-wrap gap-2">
-              {canUpdate && <>
-                <Button variant="outline" className="gap-1" onClick={() => { setStatus(sel.id, "Escaladée"); toast.success("Escaladée à la direction"); }}><ArrowUpRight className="h-4 w-4" />Escalader</Button>
-                <Button variant="outline" onClick={() => { setStatus(sel.id, "En cours"); toast.success("Statut mis à jour"); }}>Marquer en cours</Button>
-                <Button className="brand-gradient-warm text-white gap-1" onClick={() => { setStatus(sel.id, "Résolue"); toast.success("Réponse envoyée · Résolue"); setSel(null); }}><CheckCircle2 className="h-4 w-4" />Résoudre</Button>
+              {canUpdate && ticketOpen && <>
+                <Button variant="outline" className="gap-1" onClick={() => { setStatus(current.id, "Escaladée"); toast.success("Escaladée à la direction"); }}><ArrowUpRight className="h-4 w-4" />Escalader</Button>
+                <Button className="brand-gradient-warm text-white gap-1" onClick={() => { setStatus(current.id, "Résolue"); toast.success("Ticket résolu"); }}><CheckCircle2 className="h-4 w-4" />Marquer résolu</Button>
               </>}
             </DialogFooter>
           </>)}
@@ -209,9 +261,17 @@ function ReclamPage() {
               <div><Label>Catégorie</Label><Select value={form.categorie} onValueChange={(v) => setForm({ ...form, categorie: v as Reclamation["categorie"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{cats.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
               <div><Label>Priorité</Label><Select value={form.priorite} onValueChange={(v) => setForm({ ...form, priorite: v as Reclamation["priorite"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{prios.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
             </div>
-            <div><Label>Statut</Label><Select value={form.statut} onValueChange={(v) => setForm({ ...form, statut: v as Reclamation["statut"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{stats.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Statut</Label><Select value={form.statut} onValueChange={(v) => setForm({ ...form, statut: v as Reclamation["statut"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{stats.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label>Assigné à</Label>
+                <Select value={form.assigneeId ?? ""} onValueChange={(v) => { const u = users.find((x) => x.id === v); setForm({ ...form, assigneeId: v, assigneeNom: u?.nom }); }}>
+                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>{users.filter((u) => u.actif).map((u) => <SelectItem key={u.id} value={u.id}>{u.nom}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
             <div><Label>Sujet</Label><Input value={form.sujet} onChange={(e) => setForm({ ...form, sujet: e.target.value })} /></div>
-            <div><Label>Description</Label><Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+            <div><Label>Problème du client</Label><Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
           </div>
           <DialogFooter><Button className="brand-gradient-warm text-white" onClick={save}>Enregistrer</Button></DialogFooter>
         </DialogContent>

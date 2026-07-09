@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-export type Section = "base-connaissance" | "qualification" | "reclamations" | "relance" | "utilisateurs";
+export type Section = "base-connaissance" | "qualification" | "reclamations" | "relance" | "design" | "utilisateurs";
 export type Perm = "read" | "create" | "update" | "delete";
 export type Role = "admin" | "collaborateur";
 
@@ -22,6 +22,7 @@ const ALL: Permissions = {
   qualification: { read: true, create: true, update: true, delete: true },
   reclamations: { read: true, create: true, update: true, delete: true },
   relance: { read: true, create: true, update: true, delete: true },
+  design: { read: true, create: true, update: true, delete: true },
   utilisateurs: { read: true, create: true, update: true, delete: true },
 };
 
@@ -30,6 +31,7 @@ const emptyPerms = (): Permissions => ({
   qualification: { read: false, create: false, update: false, delete: false },
   reclamations: { read: false, create: false, update: false, delete: false },
   relance: { read: false, create: false, update: false, delete: false },
+  design: { read: false, create: false, update: false, delete: false },
   utilisateurs: { read: false, create: false, update: false, delete: false },
 });
 
@@ -182,5 +184,6 @@ export const SECTIONS: { id: Section; label: string }[] = [
   { id: "qualification", label: "Qualification IA" },
   { id: "reclamations", label: "Réclamations IA" },
   { id: "relance", label: "Relance IA" },
+  { id: "design", label: "Design IA" },
   { id: "utilisateurs", label: "Gestion utilisateurs" },
 ];
