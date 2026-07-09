@@ -218,10 +218,12 @@ function QualificationPage() {
                 <div className="flex-1">
                   <DialogTitle className="text-2xl text-white">{sel.nom}</DialogTitle>
                   <DialogDescription className="text-white/80">Qualification du {sel.date}</DialogDescription>
-                  <div className="mt-2 flex items-center gap-2">
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
                     <Badge className={`${statutClr[sel.statut]} border`}>{sel.statut}</Badge>
+                    <Badge className={`${phaseMeta[sel.phase].clr} border`}>{phaseMeta[sel.phase].emoji} {sel.phase}</Badge>
                     <div className="text-xs text-white/80">Score IA <strong className="text-[color:var(--brand-accent)]">{sel.score}/100</strong></div>
                   </div>
+                  {sel.motifPerte && <div className="mt-1 text-xs text-white/80">Motif : {sel.motifPerte}</div>}
                 </div>
               </div>
             </div>
