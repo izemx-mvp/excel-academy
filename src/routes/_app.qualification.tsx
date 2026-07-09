@@ -34,8 +34,18 @@ const statutClr: Record<Qualification["statut"], string> = {
   Froid: "bg-blue-100 text-blue-700 border-blue-200",
 };
 
+const phaseMeta: Record<Qualification["phase"], { icon: typeof Flame; clr: string; emoji: string }> = {
+  "Nouveau":       { icon: CircleDashed,  clr: "bg-slate-100 text-slate-700 border-slate-200",      emoji: "✨" },
+  "Contacté":      { icon: PhoneCall,     clr: "bg-sky-100 text-sky-700 border-sky-200",            emoji: "📞" },
+  "RDV planifié":  { icon: CalendarClock, clr: "bg-violet-100 text-violet-700 border-violet-200",   emoji: "📅" },
+  "Visite école":  { icon: School,        clr: "bg-amber-100 text-amber-700 border-amber-200",      emoji: "🏫" },
+  "Gagné":         { icon: Trophy,        clr: "bg-emerald-100 text-emerald-700 border-emerald-200",emoji: "🏆" },
+  "Perdu":         { icon: XCircle,       clr: "bg-red-100 text-red-700 border-red-200",            emoji: "❌" },
+  "Abandonné":     { icon: Ban,           clr: "bg-zinc-100 text-zinc-700 border-zinc-200",         emoji: "🚫" },
+};
+
 function emptyForm(): Omit<Qualification, "id"> {
-  return { nom: "", telephone: "", email: "", formation: "", budget: "", score: 50, statut: "Tiède", date: new Date().toISOString().slice(0, 10), notes: "" };
+  return { nom: "", telephone: "", email: "", formation: "", budget: "", score: 50, statut: "Tiède", phase: "Nouveau", date: new Date().toISOString().slice(0, 10), notes: "" };
 }
 
 function QualificationPage() {
