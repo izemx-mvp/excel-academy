@@ -87,18 +87,16 @@ function QualificationPage() {
     <>
       <PageHeader title="Qualification IA" description="Prospects qualifiés automatiquement par l'agent IA" />
       <main className="flex-1 p-4 md:p-6 space-y-6">
-        <div className="grid gap-4 sm:grid-cols-3">
-          {(["Chaud", "Tiède", "Froid"] as const).map((s) => {
-            const Icon = statutIcon[s];
-            const count = qualifications.filter((i) => i.statut === s).length;
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {(["Nouveau", "Contacté", "RDV planifié", "Visite école", "Gagné", "Perdu", "Abandonné"] as const).map((p) => {
+            const meta = phaseMeta[p];
+            const Icon = meta.icon;
+            const count = qualifications.filter((i) => i.phase === p).length;
             return (
-              <Card key={s} className="overflow-hidden hover:shadow-lg transition">
-                <div className={`h-1 ${s === "Chaud" ? "bg-red-500" : s === "Tiède" ? "bg-orange-500" : "bg-blue-500"}`} />
-                <CardContent className="pt-6 flex items-center gap-4">
-                  <div className={`h-12 w-12 rounded-xl flex items-center justify-center border ${statutClr[s]}`}><Icon className="h-6 w-6" /></div>
-                  <div><div className="text-3xl font-bold">{count}</div><div className="text-xs text-muted-foreground">Prospects {s.toLowerCase()}s</div></div>
-                </CardContent>
-              </Card>
+              <button key={p} onClick={() => setPhase(phase === p ? "all" : p)} className={`text-left rounded-xl border p-3 flex items-center gap-3 hover:shadow-md transition ${phase === p ? "ring-2 ring-[color:var(--brand)] " : ""}${meta.clr}`}>
+                <div className="h-9 w-9 rounded-lg bg-white/70 flex items-center justify-center"><Icon className="h-4 w-4" /></div>
+                <div className="min-w-0"><div className="text-xl font-bold leading-none">{count}</div><div className="text-[11px] mt-1 truncate">{p}</div></div>
+              </button>
             );
           })}
         </div>
