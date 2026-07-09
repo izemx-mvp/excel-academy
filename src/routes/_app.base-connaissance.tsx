@@ -312,6 +312,7 @@ function FaqTab({ canCreate, canUpdate, canDelete }: CrudProps) {
   const [editing, setEditing] = useState<typeof faqs[number] | null>(null);
   const [form, setForm] = useState({ q: "", r: "", cat: "Général" });
   const filtered = useMemo(() => faqs.filter((f) => f.q.toLowerCase().includes(q.toLowerCase()) || f.r.toLowerCase().includes(q.toLowerCase())), [faqs, q]);
+  const { page, setPage, pageCount, total, pageItems, pageSize } = usePagination(filtered, 8);
   const cats = ["Général", "Inscription", "Paiement", "Transport", "Hébergement", "Vie scolaire", "Pédagogique"];
 
   const save = () => {
@@ -331,7 +332,7 @@ function FaqTab({ canCreate, canUpdate, canDelete }: CrudProps) {
         {canCreate && <Button onClick={() => { setEditing(null); setForm({ q: "", r: "", cat: "Général" }); setOpen(true); }} className="brand-gradient-warm text-white gap-2"><Plus className="h-4 w-4" />Nouvelle FAQ</Button>}
       </div>
       <div className="space-y-2">
-        {filtered.map((f, i) => (
+        {pageItems.map((f, i) => (
           <Card key={i}>
             <CardContent className="p-4 flex gap-3 items-start">
               <Badge variant="secondary" className="shrink-0 mt-1">{f.cat}</Badge>
@@ -348,21 +349,29 @@ function FaqTab({ canCreate, canUpdate, canDelete }: CrudProps) {
         ))}
         {filtered.length === 0 && <p className="text-center text-sm text-muted-foreground py-8">Aucun résultat</p>}
       </div>
+      <DataPagination page={page} pageCount={pageCount} total={total} pageSize={pageSize} onChange={setPage} label="questions" />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{editing ? "Modifier" : "Nouvelle"} FAQ</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div><Label>Catégorie</Label>
+        <DialogContent className="max-w-xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><HelpCircle className="h-5 w-5 text-[color:var(--brand-accent)]" />{editing ? "Modifier la FAQ" : "Nouvelle FAQ"}</DialogTitle>
+            <DialogDescription>Question fréquente consultée par l'agent IA</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5">
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><Tag className="h-3.5 w-3.5" />Catégorie</div>
               <Select value={form.cat} onValueChange={(v) => setForm({ ...form, cat: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{cats.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
               </Select>
-            </div>
-            <div><Label>Question</Label><Input value={form.q} onChange={(e) => setForm({ ...form, q: e.target.value })} /></div>
-            <div><Label>Réponse</Label><Textarea rows={4} value={form.r} onChange={(e) => setForm({ ...form, r: e.target.value })} /></div>
+            </section>
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><HelpCircle className="h-3.5 w-3.5" />Question & réponse</div>
+              <div><Label className="text-xs">Question posée</Label><Input value={form.q} onChange={(e) => setForm({ ...form, q: e.target.value })} placeholder="Quels sont les horaires d'inscription ?" /></div>
+              <div><Label className="text-xs">Réponse de l'agent</Label><Textarea rows={5} value={form.r} onChange={(e) => setForm({ ...form, r: e.target.value })} placeholder="Rédigez la réponse exacte que l'IA doit fournir aux familles..." /></div>
+            </section>
           </div>
-          <DialogFooter><Button className="brand-gradient-warm text-white" onClick={save}>Enregistrer</Button></DialogFooter>
+          <DialogFooter><Button className="brand-gradient-warm text-white shadow-elegant" onClick={save}>{editing ? "Enregistrer" : "Créer la FAQ"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
