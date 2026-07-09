@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import {
   formations as seedFormations,
   contacts as seedContacts,
+  socials as seedSocials,
   faqs as seedFaqs,
   documents as seedDocs,
   qualifications as seedQuals,
@@ -10,6 +11,7 @@ import {
   designs as seedDesigns,
   kbBlocks as seedKbBlocks,
   type Contact,
+  type Socials,
   type Formation,
   type Qualification,
   type Reclamation,
@@ -25,6 +27,7 @@ type Doc = (typeof seedDocs)[number];
 type State = {
   formations: Formation[];
   contacts: Contact[];
+  socials: Socials;
   faqs: Faq[];
   documents: Doc[];
   qualifications: Qualification[];
@@ -34,11 +37,12 @@ type State = {
   kbBlocks: KbBlock[];
 };
 
-const KEY = "excel_data_v4";
+const KEY = "excel_data_v5";
 
 const seed = (): State => ({
   formations: seedFormations,
   contacts: seedContacts,
+  socials: seedSocials,
   faqs: seedFaqs,
   documents: seedDocs,
   qualifications: seedQuals,
@@ -47,6 +51,7 @@ const seed = (): State => ({
   designs: seedDesigns,
   kbBlocks: seedKbBlocks,
 });
+
 
 const load = (): State => {
   if (typeof window === "undefined") return seed();
@@ -80,6 +85,9 @@ export const dataStore = {
   addContact(c: Contact) { state = { ...state, contacts: [c, ...state.contacts] }; persist(); },
   updateContact(dept: string, p: Partial<Contact>) { state = { ...state, contacts: state.contacts.map((x) => x.departement === dept ? { ...x, ...p } : x) }; persist(); },
   removeContact(dept: string) { state = { ...state, contacts: state.contacts.filter((x) => x.departement !== dept) }; persist(); },
+
+  updateSocials(p: Partial<Socials>) { state = { ...state, socials: { ...state.socials, ...p } }; persist(); },
+
 
   addFaq(f: Faq) { state = { ...state, faqs: [f, ...state.faqs] }; persist(); },
   updateFaq(oldQ: string, p: Partial<Faq>) { state = { ...state, faqs: state.faqs.map((x) => x.q === oldQ ? { ...x, ...p } : x) }; persist(); },

@@ -171,94 +171,60 @@ function ContactsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
 }
 
 function SocialTab({ canUpdate }: { canUpdate: boolean }) {
-  const { contacts } = useData();
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<Contact | null>(null);
-  const [form, setForm] = useState<Contact | null>(null);
+  const { socials } = useData();
+  const [form, setForm] = useState(socials);
+  const [dirty, setDirty] = useState(false);
 
-  const openEdit = (c: Contact) => { setEditing(c); setForm({ ...c }); setOpen(true); };
-  const save = () => {
-    if (!form) return;
-    dataStore.updateContact(editing!.departement, form);
-    toast.success("Réseaux mis à jour");
-    setOpen(false);
-  };
+  const set = (k: keyof typeof socials, v: string) => { setForm({ ...form, [k]: v }); setDirty(true); };
+  const save = () => { dataStore.updateSocials(form); setDirty(false); toast.success("Réseaux sociaux mis à jour"); };
 
-  const socials: Array<{ key: keyof Contact; label: string; Icon: typeof Globe; color: string; placeholder: string }> = [
+  const fields: Array<{ key: keyof typeof socials; label: string; Icon: typeof Globe; color: string; placeholder: string }> = [
     { key: "website", label: "Site web", Icon: Globe, color: "text-slate-700", placeholder: "https://excelacademy.ma" },
-    { key: "facebook", label: "Facebook", Icon: Facebook, color: "text-blue-600", placeholder: "https://facebook.com/..." },
-    { key: "instagram", label: "Instagram", Icon: Instagram, color: "text-pink-600", placeholder: "https://instagram.com/..." },
-    { key: "linkedin", label: "LinkedIn", Icon: Linkedin, color: "text-sky-700", placeholder: "https://linkedin.com/school/..." },
-    { key: "tiktok", label: "TikTok", Icon: Music2, color: "text-slate-900", placeholder: "https://tiktok.com/@..." },
-    { key: "youtube", label: "YouTube", Icon: Youtube, color: "text-red-600", placeholder: "https://youtube.com/@..." },
-    { key: "whatsapp", label: "WhatsApp", Icon: MessageCircle, color: "text-emerald-600", placeholder: "https://wa.me/212..." },
+    { key: "facebook", label: "Facebook", Icon: Facebook, color: "text-blue-600", placeholder: "https://facebook.com/excelacademy.ma" },
+    { key: "instagram", label: "Instagram", Icon: Instagram, color: "text-pink-600", placeholder: "https://instagram.com/excelacademy.ma" },
+    { key: "linkedin", label: "LinkedIn", Icon: Linkedin, color: "text-sky-700", placeholder: "https://linkedin.com/school/excelacademy" },
+    { key: "tiktok", label: "TikTok", Icon: Music2, color: "text-slate-900", placeholder: "https://tiktok.com/@excelacademy" },
+    { key: "youtube", label: "YouTube", Icon: Youtube, color: "text-red-600", placeholder: "https://youtube.com/@excelacademy" },
+    { key: "whatsapp", label: "WhatsApp", Icon: MessageCircle, color: "text-emerald-600", placeholder: "https://wa.me/212524332110" },
   ];
 
+  const filled = fields.filter((f) => form[f.key]);
+
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-2xl space-y-5">
       <Card className="brand-gradient-mesh text-white border-0">
         <CardContent className="p-5 flex items-center gap-4">
           <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur"><Share2 className="h-6 w-6" /></div>
           <div>
             <div className="font-semibold">Présence en ligne d'Excel Academy</div>
-            <div className="text-sm text-white/85">L'agent IA partage ces liens aux familles selon le canal utilisé.</div>
+            <div className="text-sm text-white/85">Ces liens sont partagés par l'agent IA selon le canal utilisé.</div>
+          </div>
+          <div className="ml-auto text-right">
+            <div className="text-2xl font-bold">{filled.length}</div>
+            <div className="text-[10px] uppercase tracking-wider text-white/80">réseaux actifs</div>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {contacts.map((c) => {
-          const filled = socials.filter((s) => c[s.key]);
-          return (
-            <Card key={c.departement} className="hover:shadow-lg transition">
-              <CardContent className="pt-6 space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="font-semibold text-sm">{c.departement}</div>
-                    <div className="text-xs text-muted-foreground">{filled.length} réseau{filled.length > 1 ? "x" : ""} configuré{filled.length > 1 ? "s" : ""}</div>
-                  </div>
-                  {canUpdate && <Button size="sm" variant="outline" onClick={() => openEdit(c)} className="gap-1"><Pencil className="h-3.5 w-3.5" />Gérer</Button>}
-                </div>
-                {filled.length === 0 ? (
-                  <div className="text-xs text-muted-foreground rounded-lg border border-dashed p-3 text-center">Aucun réseau social pour ce centre</div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    {filled.map(({ key, label, Icon, color }) => (
-                      <a key={key} href={c[key] as string} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-lg border p-2 text-xs hover:bg-muted transition">
-                        <Icon className={`h-4 w-4 ${color}`} />
-                        <span className="truncate flex-1">{label}</span>
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Share2 className="h-5 w-5 text-[color:var(--brand-accent)]" />Réseaux sociaux</DialogTitle>
-            <DialogDescription>{editing?.departement}</DialogDescription>
-          </DialogHeader>
-          {form && (
-            <div className="space-y-3">
-              {socials.map(({ key, label, Icon, color, placeholder }) => (
-                <div key={key}>
-                  <Label className="text-xs flex items-center gap-1.5"><Icon className={`h-3.5 w-3.5 ${color}`} />{label}</Label>
-                  <Input value={(form[key] as string) ?? ""} onChange={(e) => setForm({ ...form, [key]: e.target.value })} placeholder={placeholder} />
-                </div>
-              ))}
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          {fields.map(({ key, label, Icon, color, placeholder }) => (
+            <div key={key} className="space-y-1.5">
+              <Label className="text-xs flex items-center gap-1.5"><Icon className={`h-3.5 w-3.5 ${color}`} />{label}</Label>
+              <Input value={form[key] ?? ""} onChange={(e) => set(key, e.target.value)} placeholder={placeholder} disabled={!canUpdate} />
+            </div>
+          ))}
+          {canUpdate && (
+            <div className="flex justify-end pt-2">
+              <Button onClick={save} disabled={!dirty} className="brand-gradient-warm text-white gap-1">Enregistrer</Button>
             </div>
           )}
-          <DialogFooter><Button className="brand-gradient-warm text-white" onClick={save}>Enregistrer</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </CardContent>
+      </Card>
     </div>
   );
 }
+
 
 
 function FormationsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
