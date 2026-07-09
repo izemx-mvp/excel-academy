@@ -15,9 +15,11 @@ import { Slider } from "@/components/ui/slider";
 import { dataStore, useData } from "@/lib/data-store";
 import { useCan, PermissionDenied } from "@/components/permission-guard";
 import type { Qualification } from "@/lib/mock-data";
-import { Search, Flame, Snowflake, ThermometerSun, Eye, Send, Plus, Pencil, Trash2, Phone, Mail, User, Wallet, GraduationCap, CalendarDays } from "lucide-react";
+import { Search, Flame, Snowflake, ThermometerSun, Eye, Send, Plus, Pencil, Trash2, Phone, Mail, User, Wallet, GraduationCap, CalendarDays, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { usePagination } from "@/hooks/use-pagination";
+import { DataPagination } from "@/components/data-pagination";
 
 export const Route = createFileRoute("/_app/qualification")({
   head: () => ({ meta: [{ title: "Qualification IA — Excel Academy" }] }),
@@ -57,6 +59,7 @@ function QualificationPage() {
     (formation === "all" || it.formation === formation) &&
     (q === "" || it.nom.toLowerCase().includes(q.toLowerCase()) || it.email.toLowerCase().includes(q.toLowerCase()) || it.telephone.includes(q))
   ), [qualifications, q, statut, formation]);
+  const { page, setPage, pageCount, total, pageItems, pageSize } = usePagination(filtered, 8);
 
   const openCreate = () => { setEditing(null); setForm(emptyForm()); setOpen(true); };
   const openEdit = (it: Qualification) => { setEditing(it); setForm(it); setOpen(true); setSel(null); };
@@ -126,7 +129,7 @@ function QualificationPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((it) => (
+                  {pageItems.map((it) => (
                     <TableRow key={it.id}>
                       <TableCell>
                         <div className="font-medium">{it.nom}</div>
