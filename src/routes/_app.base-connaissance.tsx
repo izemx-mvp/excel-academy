@@ -14,11 +14,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { dataStore, useData } from "@/lib/data-store";
 import { useCan, PermissionDenied } from "@/components/permission-guard";
-import { FileText, Download, Search, Pencil, Trash2, Plus, School, HelpCircle, Building2, Clock, Mail, Phone, MapPin, Facebook, Instagram, Linkedin, Globe, Youtube, MessageCircle, Music2, Share2, User, Calendar } from "lucide-react";
-import { useState, useMemo } from "react";
+import { FileText, Download, Search, Pencil, Trash2, Plus, School, HelpCircle, Building2, Clock, Mail, Phone, MapPin, Facebook, Instagram, Linkedin, Globe, Youtube, MessageCircle, Music2, Share2, User, Calendar, Upload, DollarSign, GraduationCap, Tag } from "lucide-react";
+import { useState, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import type { Formation, Contact, JourSemaine, HoursByDay } from "@/lib/mock-data";
 import { JOURS_SEMAINE, defaultHoursByDay, formatHours } from "@/lib/mock-data";
+import { usePagination } from "@/hooks/use-pagination";
+import { DataPagination } from "@/components/data-pagination";
 
 export const Route = createFileRoute("/_app/base-connaissance")({
   head: () => ({ meta: [{ title: "Base de connaissance IA — Excel Academy" }] }),
