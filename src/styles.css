@@ -112,28 +112,82 @@
 @layer base {
   * { border-color: var(--color-border); }
   body {
-    background-color: var(--color-background);
+    background-color: oklch(0.97 0.012 250);
     color: var(--color-foreground);
     font-family: var(--font-display);
     background-image:
-      radial-gradient(ellipse 900px 500px at 0% 0%, color-mix(in oklab, var(--brand-accent) 14%, transparent) 0, transparent 60%),
-      radial-gradient(ellipse 900px 500px at 100% 0%, color-mix(in oklab, var(--brand-cyan) 14%, transparent) 0, transparent 60%),
-      radial-gradient(ellipse 1200px 600px at 50% 100%, color-mix(in oklab, var(--brand) 14%, transparent) 0, transparent 55%),
-      linear-gradient(180deg, oklch(0.99 0.005 250) 0%, oklch(0.965 0.01 250) 100%);
+      radial-gradient(ellipse 1000px 600px at 5% -5%, color-mix(in oklab, var(--brand-accent) 22%, transparent) 0, transparent 55%),
+      radial-gradient(ellipse 1000px 600px at 105% 5%, color-mix(in oklab, var(--brand-cyan) 22%, transparent) 0, transparent 55%),
+      radial-gradient(ellipse 1400px 700px at 50% 110%, color-mix(in oklab, var(--brand) 22%, transparent) 0, transparent 50%),
+      linear-gradient(180deg, oklch(0.985 0.008 250) 0%, oklch(0.955 0.015 245) 100%);
     background-attachment: fixed;
   }
   h1, h2, h3, h4 { letter-spacing: -0.02em; }
   input, textarea, select, button { font-family: inherit; }
 }
 
-/* Subtle grid texture on the app shell inside the sidebar layout */
+/* App shell — let the body gradient show through, add subtle grid + glow */
 [data-slot="sidebar-inset"] {
+  background-color: transparent !important;
   background-image:
-    linear-gradient(to right, color-mix(in oklab, var(--brand) 4%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in oklab, var(--brand) 4%, transparent) 1px, transparent 1px);
-  background-size: 36px 36px;
-  background-position: -1px -1px;
+    radial-gradient(ellipse 700px 400px at 20% 0%, color-mix(in oklab, var(--brand-accent) 8%, transparent) 0, transparent 60%),
+    radial-gradient(ellipse 700px 400px at 90% 100%, color-mix(in oklab, var(--brand-cyan) 8%, transparent) 0, transparent 60%),
+    linear-gradient(to right, color-mix(in oklab, var(--brand) 3.5%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--brand) 3.5%, transparent) 1px, transparent 1px);
+  background-size: auto, auto, 40px 40px, 40px 40px;
+  background-position: 0 0, 0 0, -1px -1px, -1px -1px;
 }
+
+/* Cards: glassy premium surface by default inside the backoffice */
+[data-slot="sidebar-inset"] [data-slot="card"] {
+  background-color: color-mix(in oklab, white 82%, transparent);
+  backdrop-filter: blur(10px) saturate(1.15);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+  border-color: color-mix(in oklab, var(--brand) 8%, transparent);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.04), 0 8px 24px -12px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+
+/* Dialog surface — premium translucent card */
+[data-slot="dialog-content"] {
+  background-color: color-mix(in oklab, white 92%, transparent) !important;
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border: 1px solid color-mix(in oklab, var(--brand) 10%, transparent);
+  box-shadow: 0 30px 80px -20px color-mix(in oklab, var(--brand) 35%, transparent), 0 0 0 1px color-mix(in oklab, white 60%, transparent) inset;
+}
+[data-slot="dialog-content"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, color-mix(in oklab, var(--brand-accent) 5%, transparent), transparent 45%);
+  pointer-events: none;
+}
+
+/* Inputs / textareas / selects — softer, more premium */
+[data-slot="sidebar-inset"] input:not([type="checkbox"]):not([type="radio"]),
+[data-slot="sidebar-inset"] textarea,
+[data-slot="sidebar-inset"] [role="combobox"],
+[data-slot="dialog-content"] input:not([type="checkbox"]):not([type="radio"]),
+[data-slot="dialog-content"] textarea,
+[data-slot="dialog-content"] [role="combobox"] {
+  background-color: color-mix(in oklab, white 70%, transparent);
+  border-color: color-mix(in oklab, var(--brand) 12%, transparent);
+}
+[data-slot="sidebar-inset"] input:hover:not(:disabled),
+[data-slot="sidebar-inset"] textarea:hover:not(:disabled),
+[data-slot="dialog-content"] input:hover:not(:disabled),
+[data-slot="dialog-content"] textarea:hover:not(:disabled) {
+  border-color: color-mix(in oklab, var(--brand-accent) 45%, transparent);
+}
+
+/* Section header — sticky page header glass polish */
+[data-slot="sidebar-inset"] header.sticky {
+  background-color: color-mix(in oklab, white 65%, transparent) !important;
+  border-bottom-color: color-mix(in oklab, var(--brand) 12%, transparent);
+  box-shadow: 0 6px 20px -18px color-mix(in oklab, var(--brand) 45%, transparent);
+}
+
 
 @utility brand-gradient {
   background-image: linear-gradient(135deg, var(--brand) 0%, oklch(0.4 0.14 260) 50%, var(--brand-cyan) 100%);

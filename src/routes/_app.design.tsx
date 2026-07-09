@@ -21,15 +21,15 @@ export const Route = createFileRoute("/_app/design")({
   component: DesignPage,
 });
 
-const types: Design["type"][] = ["Flyer", "Post réseaux sociaux", "Bannière web", "Affiche", "Texte marketing", "Email campagne"];
-const canaux: Design["canal"][] = ["Instagram", "Facebook", "LinkedIn", "TikTok", "YouTube", "Site web", "Impression", "WhatsApp", "Email"];
+const types: Design["type"][] = ["Flyer", "Bannière web"];
+const canaux: Design["canal"][] = ["Impression", "Site web", "Instagram", "Facebook", "LinkedIn"];
 const statuts: Design["statut"][] = ["Brouillon", "En génération", "Prêt", "Publié"];
 const tons: NonNullable<Design["ton"]>[] = ["Institutionnel", "Chaleureux", "Festif", "Élégant", "Urgent", "Éducatif"];
 
 const FORMATS: Record<Design["type"], string[]> = {
   "Flyer": ["A5 vertical (148×210 mm)", "A4 vertical (210×297 mm)", "A6 (105×148 mm)", "Carré 15×15 cm"],
+  "Bannière web": ["Hero 1600×600", "Bannière 1920×480", "Slider 1440×720", "Sidebar 300×600", "Header email 600×200"],
   "Post réseaux sociaux": ["Instagram Feed 1080×1350", "Instagram Carré 1080×1080", "Story 1080×1920", "Reel/TikTok 1080×1920", "Facebook 1200×630"],
-  "Bannière web": ["Hero 1600×600", "Bannière 1920×480", "Slider 1440×720", "Sidebar 300×600"],
   "Affiche": ["A3 (297×420 mm)", "A2 (420×594 mm)", "Roll-up 85×200 cm"],
   "Texte marketing": ["SMS court (160 car.)", "WhatsApp (300 car.)", "Slogan (max 12 mots)", "Description (500 car.)"],
   "Email campagne": ["Newsletter 600px", "Email transactionnel", "Séquence 3 emails", "Invitation événement"],
@@ -54,12 +54,13 @@ const statClr: Record<Design["statut"], string> = {
 
 const typeIcon: Record<Design["type"], typeof ImageIcon> = {
   "Flyer": ImageIcon,
-  "Post réseaux sociaux": MessageSquare,
   "Bannière web": Megaphone,
+  "Post réseaux sociaux": MessageSquare,
   "Affiche": ImageIcon,
   "Texte marketing": MessageSquare,
   "Email campagne": Mail,
 };
+
 
 function emptyForm(): Omit<Design, "id"> {
   return { titre: "", type: "Flyer", canal: "Instagram", format: FORMATS["Flyer"][0], brief: "", cible: CIBLES[0], statut: "Brouillon", createdAt: new Date().toISOString().slice(0, 10), contenu: "", slogan: "", cta: "", hashtags: "", palette: "Teal · Or · Blanc", ton: "Institutionnel", dateEvenement: "", imageUrl: "" };
