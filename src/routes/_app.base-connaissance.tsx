@@ -14,11 +14,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { dataStore, useData } from "@/lib/data-store";
 import { useCan, PermissionDenied } from "@/components/permission-guard";
-import { FileText, Download, Search, Pencil, Trash2, Plus, School, HelpCircle, Building2, Clock, Mail, Phone, MapPin, Facebook, Instagram, Linkedin, Globe, Youtube, MessageCircle, Music2, Share2, User, Calendar } from "lucide-react";
-import { useState, useMemo } from "react";
+import { FileText, Download, Search, Pencil, Trash2, Plus, School, HelpCircle, Building2, Clock, Mail, Phone, MapPin, Facebook, Instagram, Linkedin, Globe, Youtube, MessageCircle, Music2, Share2, User, Calendar, Upload, DollarSign, GraduationCap, Tag } from "lucide-react";
+import { useState, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import type { Formation, Contact, JourSemaine, HoursByDay } from "@/lib/mock-data";
 import { JOURS_SEMAINE, defaultHoursByDay, formatHours } from "@/lib/mock-data";
+import { usePagination } from "@/hooks/use-pagination";
+import { DataPagination } from "@/components/data-pagination";
 
 export const Route = createFileRoute("/_app/base-connaissance")({
   head: () => ({ meta: [{ title: "Base de connaissance IA — Excel Academy" }] }),
@@ -232,6 +234,7 @@ function FormationsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Formation | null>(null);
   const [form, setForm] = useState<Omit<Formation, "id">>({ nom: "", duree: "", prerequis: "", debouches: "", frais: 0, dateDebut: "" });
+  const { page, setPage, pageCount, total, pageItems, pageSize } = usePagination(formations, 6);
 
   const openCreate = () => { setEditing(null); setForm({ nom: "", duree: "", prerequis: "", debouches: "", frais: 0, dateDebut: "" }); setOpen(true); };
   const openEdit = (f: Formation) => { setEditing(f); setForm(f); setOpen(true); };
@@ -246,7 +249,7 @@ function FormationsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
     <div className="space-y-4">
       {canCreate && <div className="flex justify-end"><Button onClick={openCreate} className="brand-gradient-warm text-white gap-2"><Plus className="h-4 w-4" />Nouvelle formation</Button></div>}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {formations.map((f) => (
+        {pageItems.map((f) => (
           <Card key={f.id} className="hover:shadow-lg transition">
             <div className="h-1 brand-gradient-warm" />
             <CardContent className="pt-6 space-y-2 text-sm">
@@ -266,23 +269,36 @@ function FormationsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
           </Card>
         ))}
       </div>
+      <DataPagination page={page} pageCount={pageCount} total={total} pageSize={pageSize} onChange={setPage} label="formations" />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{editing ? "Modifier" : "Nouvelle"} formation</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div><Label>Nom</Label><Input value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Durée</Label><Input value={form.duree} onChange={(e) => setForm({ ...form, duree: e.target.value })} /></div>
-              <div><Label>Prérequis</Label><Input value={form.prerequis} onChange={(e) => setForm({ ...form, prerequis: e.target.value })} /></div>
-            </div>
-            <div><Label>Débouchés</Label><Input value={form.debouches} onChange={(e) => setForm({ ...form, debouches: e.target.value })} /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Frais annuels (MAD)</Label><Input type="number" value={form.frais} onChange={(e) => setForm({ ...form, frais: +e.target.value })} /></div>
-              <div><Label>Date de rentrée</Label><Input value={form.dateDebut ?? ""} onChange={(e) => setForm({ ...form, dateDebut: e.target.value })} placeholder="05 septembre 2025" /></div>
-            </div>
+        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><GraduationCap className="h-5 w-5 text-[color:var(--brand-accent)]" />{editing ? "Modifier la formation" : "Nouvelle formation"}</DialogTitle>
+            <DialogDescription>Cursus proposé aux familles — utilisé par l'IA de qualification</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5">
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><School className="h-3.5 w-3.5" />Identité du cursus</div>
+              <div><Label className="text-xs">Intitulé</Label><Input value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} placeholder="Bac Sciences Maths" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs flex items-center gap-1"><Clock className="h-3 w-3" />Durée</Label><Input value={form.duree} onChange={(e) => setForm({ ...form, duree: e.target.value })} placeholder="3 ans" /></div>
+                <div><Label className="text-xs flex items-center gap-1"><Calendar className="h-3 w-3" />Date de rentrée</Label><Input value={form.dateDebut ?? ""} onChange={(e) => setForm({ ...form, dateDebut: e.target.value })} placeholder="05 septembre 2025" /></div>
+              </div>
+            </section>
+
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><Tag className="h-3.5 w-3.5" />Contenu pédagogique</div>
+              <div><Label className="text-xs">Prérequis</Label><Input value={form.prerequis} onChange={(e) => setForm({ ...form, prerequis: e.target.value })} placeholder="Bac scientifique / passage 3ème..." /></div>
+              <div><Label className="text-xs">Débouchés</Label><Input value={form.debouches} onChange={(e) => setForm({ ...form, debouches: e.target.value })} placeholder="Grandes écoles, prépas, universités..." /></div>
+            </section>
+
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><DollarSign className="h-3.5 w-3.5" />Tarification</div>
+              <div><Label className="text-xs">Frais annuels (MAD)</Label><Input type="number" min={0} value={form.frais} onChange={(e) => setForm({ ...form, frais: +e.target.value })} /></div>
+            </section>
           </div>
-          <DialogFooter><Button className="brand-gradient-warm text-white" onClick={save}>Enregistrer</Button></DialogFooter>
+          <DialogFooter><Button className="brand-gradient-warm text-white shadow-elegant" onClick={save}>{editing ? "Enregistrer" : "Créer la formation"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
@@ -296,6 +312,7 @@ function FaqTab({ canCreate, canUpdate, canDelete }: CrudProps) {
   const [editing, setEditing] = useState<typeof faqs[number] | null>(null);
   const [form, setForm] = useState({ q: "", r: "", cat: "Général" });
   const filtered = useMemo(() => faqs.filter((f) => f.q.toLowerCase().includes(q.toLowerCase()) || f.r.toLowerCase().includes(q.toLowerCase())), [faqs, q]);
+  const { page, setPage, pageCount, total, pageItems, pageSize } = usePagination(filtered, 8);
   const cats = ["Général", "Inscription", "Paiement", "Transport", "Hébergement", "Vie scolaire", "Pédagogique"];
 
   const save = () => {
@@ -315,7 +332,7 @@ function FaqTab({ canCreate, canUpdate, canDelete }: CrudProps) {
         {canCreate && <Button onClick={() => { setEditing(null); setForm({ q: "", r: "", cat: "Général" }); setOpen(true); }} className="brand-gradient-warm text-white gap-2"><Plus className="h-4 w-4" />Nouvelle FAQ</Button>}
       </div>
       <div className="space-y-2">
-        {filtered.map((f, i) => (
+        {pageItems.map((f, i) => (
           <Card key={i}>
             <CardContent className="p-4 flex gap-3 items-start">
               <Badge variant="secondary" className="shrink-0 mt-1">{f.cat}</Badge>
@@ -332,25 +349,48 @@ function FaqTab({ canCreate, canUpdate, canDelete }: CrudProps) {
         ))}
         {filtered.length === 0 && <p className="text-center text-sm text-muted-foreground py-8">Aucun résultat</p>}
       </div>
+      <DataPagination page={page} pageCount={pageCount} total={total} pageSize={pageSize} onChange={setPage} label="questions" />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{editing ? "Modifier" : "Nouvelle"} FAQ</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div><Label>Catégorie</Label>
+        <DialogContent className="max-w-xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><HelpCircle className="h-5 w-5 text-[color:var(--brand-accent)]" />{editing ? "Modifier la FAQ" : "Nouvelle FAQ"}</DialogTitle>
+            <DialogDescription>Question fréquente consultée par l'agent IA</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5">
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><Tag className="h-3.5 w-3.5" />Catégorie</div>
               <Select value={form.cat} onValueChange={(v) => setForm({ ...form, cat: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{cats.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
               </Select>
-            </div>
-            <div><Label>Question</Label><Input value={form.q} onChange={(e) => setForm({ ...form, q: e.target.value })} /></div>
-            <div><Label>Réponse</Label><Textarea rows={4} value={form.r} onChange={(e) => setForm({ ...form, r: e.target.value })} /></div>
+            </section>
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><HelpCircle className="h-3.5 w-3.5" />Question & réponse</div>
+              <div><Label className="text-xs">Question posée</Label><Input value={form.q} onChange={(e) => setForm({ ...form, q: e.target.value })} placeholder="Quels sont les horaires d'inscription ?" /></div>
+              <div><Label className="text-xs">Réponse de l'agent</Label><Textarea rows={5} value={form.r} onChange={(e) => setForm({ ...form, r: e.target.value })} placeholder="Rédigez la réponse exacte que l'IA doit fournir aux familles..." /></div>
+            </section>
           </div>
-          <DialogFooter><Button className="brand-gradient-warm text-white" onClick={save}>Enregistrer</Button></DialogFooter>
+          <DialogFooter><Button className="brand-gradient-warm text-white shadow-elegant" onClick={save}>{editing ? "Enregistrer" : "Créer la FAQ"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
+}
+
+function inferTypeFromName(name: string): string {
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  if (["pdf"].includes(ext)) return "PDF";
+  if (["xls", "xlsx", "csv"].includes(ext)) return "Excel";
+  if (["doc", "docx"].includes(ext)) return "Word";
+  if (["jpg", "jpeg", "png", "webp", "gif", "svg"].includes(ext)) return "Image";
+  return "Autre";
+}
+
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} o`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} Ko`;
+  return `${(n / 1024 / 1024).toFixed(2)} Mo`;
 }
 
 function DocsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
@@ -360,14 +400,44 @@ function DocsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<typeof documents[number] | null>(null);
   const [form, setForm] = useState({ nom: "", type: "PDF", categorie: "Formations", taille: "" });
+  const [fileName, setFileName] = useState<string>("");
+  const fileRef = useRef<HTMLInputElement>(null);
   const cats = ["Formations", "Inscriptions", "Vie scolaire", "Marketing", "Autres"];
   const filtered = useMemo(() => documents.filter((d) => (cat === "all" || d.categorie === cat) && d.nom.toLowerCase().includes(q.toLowerCase())), [documents, q, cat]);
+  const { page, setPage, pageCount, total, pageItems, pageSize } = usePagination(filtered, 8);
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm({ nom: "", type: "PDF", categorie: "Formations", taille: "" });
+    setFileName("");
+    setOpen(true);
+  };
+
+  const onFilePicked = (file: File | null) => {
+    if (!file) return;
+    setFileName(file.name);
+    setForm((f) => ({
+      ...f,
+      nom: f.nom || file.name,
+      type: inferTypeFromName(file.name),
+      taille: formatBytes(file.size),
+    }));
+  };
 
   const save = () => {
     if (!form.nom) { toast.error("Nom requis"); return; }
+    if (!editing && !fileName) { toast.error("Sélectionnez un fichier à importer"); return; }
     if (editing) { dataStore.updateDoc(editing.nom, form); toast.success("Document mis à jour"); }
-    else { dataStore.addDoc(form); toast.success("Document ajouté"); }
+    else { dataStore.addDoc(form); toast.success(`« ${form.nom} » importé`); }
     setOpen(false);
+  };
+
+  const typeColor: Record<string, string> = {
+    PDF: "bg-red-100 text-red-700",
+    Excel: "bg-emerald-100 text-emerald-700",
+    Word: "bg-blue-100 text-blue-700",
+    Image: "bg-purple-100 text-purple-700",
+    Autre: "bg-slate-100 text-slate-700",
   };
 
   return (
@@ -381,53 +451,84 @@ function DocsTab({ canCreate, canUpdate, canDelete }: CrudProps) {
           <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="all">Toutes catégories</SelectItem>{cats.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
         </Select>
-        {canCreate && <Button onClick={() => { setEditing(null); setForm({ nom: "", type: "PDF", categorie: "Formations", taille: "" }); setOpen(true); }} className="brand-gradient-warm text-white gap-2"><Plus className="h-4 w-4" />Nouveau document</Button>}
+        {canCreate && <Button onClick={openCreate} className="brand-gradient-warm text-white gap-2"><Upload className="h-4 w-4" />Importer un document</Button>}
       </div>
       <div className="grid gap-3 md:grid-cols-2">
-        {filtered.map((d) => (
-          <Card key={d.nom} className="hover:shadow-md transition">
+        {pageItems.map((d) => (
+          <Card key={d.nom} className="hover:shadow-md transition group">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-[color:var(--brand-accent)]/10 flex items-center justify-center"><FileText className="h-5 w-5 text-[color:var(--brand-accent)]" /></div>
+              <div className="h-11 w-11 rounded-lg bg-[color:var(--brand-accent)]/10 flex items-center justify-center shrink-0"><FileText className="h-5 w-5 text-[color:var(--brand-accent)]" /></div>
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-sm truncate">{d.nom}</div>
-                <div className="text-xs text-muted-foreground">{d.type} · {d.taille} · {d.categorie}</div>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="secondary" className={`text-[10px] ${typeColor[d.type] ?? ""}`}>{d.type}</Badge>
+                  <span className="text-xs text-muted-foreground">{d.taille} · {d.categorie}</span>
+                </div>
               </div>
               <Button size="icon" variant="ghost" onClick={() => toast.success(`${d.nom} téléchargé`)}><Download className="h-4 w-4" /></Button>
-              {canUpdate && <Button size="icon" variant="ghost" onClick={() => { setEditing(d); setForm(d); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>}
+              {canUpdate && <Button size="icon" variant="ghost" onClick={() => { setEditing(d); setForm(d); setFileName(""); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>}
               {canDelete && <ConfirmDelete label={d.nom} onDelete={() => { dataStore.removeDoc(d.nom); toast.success("Supprimé"); }} />}
             </CardContent>
           </Card>
         ))}
         {filtered.length === 0 && <p className="col-span-2 text-center text-sm text-muted-foreground py-8">Aucun document</p>}
       </div>
+      <DataPagination page={page} pageCount={pageCount} total={total} pageSize={pageSize} onChange={setPage} label="documents" />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{editing ? "Modifier" : "Nouveau"} document</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div><Label>Nom</Label><Input value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} /></div>
-            <div className="grid grid-cols-3 gap-3">
-              <div><Label>Type</Label>
-                <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="PDF">PDF</SelectItem><SelectItem value="Excel">Excel</SelectItem><SelectItem value="Word">Word</SelectItem><SelectItem value="Image">Image</SelectItem></SelectContent>
-                </Select>
+        <DialogContent className="max-w-xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Upload className="h-5 w-5 text-[color:var(--brand-accent)]" />{editing ? "Modifier le document" : "Importer un document"}</DialogTitle>
+            <DialogDescription>Les fichiers importés sont consultables par l'agent IA</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5">
+            {!editing && (
+              <section className="rounded-xl border-2 border-dashed border-[color:var(--brand-accent)]/40 bg-gradient-to-br from-[color:var(--brand-accent)]/5 to-[color:var(--brand-cyan)]/5 p-6 text-center">
+                <div className="mx-auto h-12 w-12 rounded-xl brand-gradient-warm flex items-center justify-center shadow-elegant mb-3">
+                  <Upload className="h-6 w-6 text-white" />
+                </div>
+                <p className="text-sm font-medium">{fileName ? fileName : "Glissez-déposez ou sélectionnez un fichier"}</p>
+                <p className="text-xs text-muted-foreground mt-1">PDF, Word, Excel, images — jusqu'à 20 Mo</p>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.webp,.svg"
+                  onChange={(e) => onFilePicked(e.target.files?.[0] ?? null)}
+                />
+                <Button variant="outline" size="sm" className="mt-3 gap-1" onClick={() => fileRef.current?.click()}>
+                  <Upload className="h-3.5 w-3.5" />{fileName ? "Changer de fichier" : "Choisir un fichier"}
+                </Button>
+              </section>
+            )}
+
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><FileText className="h-3.5 w-3.5" />Détails du document</div>
+              <div><Label className="text-xs">Nom du document</Label><Input value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} placeholder="Brochure Bac SM 2026.pdf" /></div>
+              <div className="grid grid-cols-3 gap-3">
+                <div><Label className="text-xs">Type</Label>
+                  <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="PDF">PDF</SelectItem><SelectItem value="Excel">Excel</SelectItem><SelectItem value="Word">Word</SelectItem><SelectItem value="Image">Image</SelectItem><SelectItem value="Autre">Autre</SelectItem></SelectContent>
+                  </Select>
+                </div>
+                <div><Label className="text-xs">Catégorie</Label>
+                  <Select value={form.categorie} onValueChange={(v) => setForm({ ...form, categorie: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{cats.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div><Label className="text-xs">Taille</Label><Input value={form.taille} onChange={(e) => setForm({ ...form, taille: e.target.value })} placeholder="2.4 Mo" /></div>
               </div>
-              <div><Label>Catégorie</Label>
-                <Select value={form.categorie} onValueChange={(v) => setForm({ ...form, categorie: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{cats.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div><Label>Taille</Label><Input value={form.taille} onChange={(e) => setForm({ ...form, taille: e.target.value })} placeholder="2.4 MB" /></div>
-            </div>
+            </section>
           </div>
-          <DialogFooter><Button className="brand-gradient-warm text-white" onClick={save}>Enregistrer</Button></DialogFooter>
+          <DialogFooter><Button className="brand-gradient-warm text-white shadow-elegant gap-1" onClick={save}><Upload className="h-4 w-4" />{editing ? "Enregistrer" : "Importer"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
 }
+
 
 function ConfirmDelete({ label, onDelete }: { label: string; onDelete: () => void }) {
   return (

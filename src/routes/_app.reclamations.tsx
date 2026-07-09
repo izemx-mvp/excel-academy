@@ -14,9 +14,11 @@ import { dataStore, useData } from "@/lib/data-store";
 import { useCan, PermissionDenied } from "@/components/permission-guard";
 import { useUsers, useCurrentUser } from "@/lib/auth-store";
 import type { Reclamation } from "@/lib/mock-data";
-import { Search, Eye, CheckCircle2, ArrowUpRight, AlertTriangle, MessageSquareWarning, Plus, Pencil, Trash2, Send, UserCheck, Lock } from "lucide-react";
+import { Search, Eye, CheckCircle2, ArrowUpRight, AlertTriangle, MessageSquareWarning, Plus, Pencil, Trash2, Send, UserCheck, Lock, User, Mail, Phone, Tag, Calendar, FileText } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { usePagination } from "@/hooks/use-pagination";
+import { DataPagination } from "@/components/data-pagination";
 
 export const Route = createFileRoute("/_app/reclamations")({
   head: () => ({ meta: [{ title: "Réclamations IA — Excel Academy" }] }),
@@ -73,6 +75,7 @@ function ReclamPage() {
     (stat === "all" || r.statut === stat) &&
     (q === "" || r.nom.toLowerCase().includes(q.toLowerCase()) || r.sujet.toLowerCase().includes(q.toLowerCase()))
   ), [reclamations, q, cat, prio, stat]);
+  const { page, setPage, pageCount, total, pageItems, pageSize } = usePagination(filtered, 8);
 
   const summary = [
     { l: "Nouvelles", v: reclamations.filter((i) => i.statut === "Nouvelle").length, c: "bg-blue-500", i: MessageSquareWarning },
@@ -148,7 +151,7 @@ function ReclamPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((r) => (
+                  {pageItems.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell><div className="font-medium">{r.nom}</div><div className="text-xs text-muted-foreground">{r.email}</div></TableCell>
                       <TableCell className="max-w-[220px] truncate">{r.sujet}</TableCell>
@@ -176,6 +179,7 @@ function ReclamPage() {
                 </TableBody>
               </Table>
             </div>
+            <DataPagination page={page} pageCount={pageCount} total={total} pageSize={pageSize} onChange={setPage} label="tickets" />
           </CardContent>
         </Card>
       </main>
@@ -250,30 +254,44 @@ function ReclamPage() {
 
       {/* Create/Edit */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{editing ? "Modifier" : "Nouvelle"} réclamation</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Nom</Label><Input value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} /></div>
-              <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-              <div><Label>Téléphone</Label><Input value={form.telephone} onChange={(e) => setForm({ ...form, telephone: e.target.value })} /></div>
-              <div><Label>Date</Label><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
-              <div><Label>Catégorie</Label><Select value={form.categorie} onValueChange={(v) => setForm({ ...form, categorie: v as Reclamation["categorie"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{cats.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
-              <div><Label>Priorité</Label><Select value={form.priorite} onValueChange={(v) => setForm({ ...form, priorite: v as Reclamation["priorite"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{prios.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Statut</Label><Select value={form.statut} onValueChange={(v) => setForm({ ...form, statut: v as Reclamation["statut"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{stats.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
-              <div><Label>Assigné à</Label>
+        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><MessageSquareWarning className="h-5 w-5 text-[color:var(--brand-accent)]" />{editing ? "Modifier le ticket" : "Nouvelle réclamation"}</DialogTitle>
+            <DialogDescription>Créez un ticket pour suivre la demande jusqu'à sa résolution</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5">
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><User className="h-3.5 w-3.5" />Client</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Nom complet</Label><Input value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} placeholder="M. / Mme Nom" /></div>
+                <div><Label className="text-xs flex items-center gap-1"><Mail className="h-3 w-3" />Email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="parent@email.com" /></div>
+                <div><Label className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />Téléphone</Label><Input value={form.telephone} onChange={(e) => setForm({ ...form, telephone: e.target.value })} placeholder="0661 ..." /></div>
+                <div><Label className="text-xs flex items-center gap-1"><Calendar className="h-3 w-3" />Date d'ouverture</Label><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
+              </div>
+            </section>
+
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><Tag className="h-3.5 w-3.5" />Classification</div>
+              <div className="grid grid-cols-3 gap-3">
+                <div><Label className="text-xs">Catégorie</Label><Select value={form.categorie} onValueChange={(v) => setForm({ ...form, categorie: v as Reclamation["categorie"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{cats.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+                <div><Label className="text-xs">Priorité</Label><Select value={form.priorite} onValueChange={(v) => setForm({ ...form, priorite: v as Reclamation["priorite"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{prios.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+                <div><Label className="text-xs">Statut</Label><Select value={form.statut} onValueChange={(v) => setForm({ ...form, statut: v as Reclamation["statut"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{stats.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+              </div>
+              <div><Label className="text-xs flex items-center gap-1"><UserCheck className="h-3 w-3" />Assigné à</Label>
                 <Select value={form.assigneeId ?? ""} onValueChange={(v) => { const u = users.find((x) => x.id === v); setForm({ ...form, assigneeId: v, assigneeNom: u?.nom }); }}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>{users.filter((u) => u.actif).map((u) => <SelectItem key={u.id} value={u.id}>{u.nom}</SelectItem>)}</SelectContent>
+                  <SelectTrigger><SelectValue placeholder="Non assigné" /></SelectTrigger>
+                  <SelectContent>{users.filter((u) => u.actif).map((u) => <SelectItem key={u.id} value={u.id}>{u.nom} · {u.role}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-            </div>
-            <div><Label>Sujet</Label><Input value={form.sujet} onChange={(e) => setForm({ ...form, sujet: e.target.value })} /></div>
-            <div><Label>Problème du client</Label><Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+            </section>
+
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><FileText className="h-3.5 w-3.5" />Problème rapporté</div>
+              <div><Label className="text-xs">Sujet</Label><Input value={form.sujet} onChange={(e) => setForm({ ...form, sujet: e.target.value })} placeholder="Résumé en une phrase" /></div>
+              <div><Label className="text-xs">Description détaillée</Label><Textarea rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Décrivez le problème rencontré par le client..." /></div>
+            </section>
           </div>
-          <DialogFooter><Button className="brand-gradient-warm text-white" onClick={save}>Enregistrer</Button></DialogFooter>
+          <DialogFooter><Button className="brand-gradient-warm text-white shadow-elegant" onClick={save}>{editing ? "Enregistrer" : "Créer le ticket"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </>

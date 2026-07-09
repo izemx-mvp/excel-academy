@@ -16,9 +16,11 @@ import { Switch } from "@/components/ui/switch";
 import { dataStore, useData } from "@/lib/data-store";
 import { useCan, PermissionDenied } from "@/components/permission-guard";
 import type { Relance } from "@/lib/mock-data";
-import { Search, Eye, Send, BellRing, Settings2, DollarSign, Clock, MailCheck, Plus, Pencil, Trash2, CalendarClock } from "lucide-react";
+import { Search, Eye, Send, BellRing, Settings2, DollarSign, Clock, MailCheck, Plus, Pencil, Trash2, CalendarClock, User, Mail, Phone, GraduationCap } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { usePagination } from "@/hooks/use-pagination";
+import { DataPagination } from "@/components/data-pagination";
 
 export const Route = createFileRoute("/_app/relance")({
   head: () => ({ meta: [{ title: "Relance IA — Excel Academy" }] }),
@@ -79,6 +81,7 @@ function RelancePage() {
     (stat === "all" || r.statut === stat) &&
     (q === "" || r.nom.toLowerCase().includes(q.toLowerCase()) || r.email.toLowerCase().includes(q.toLowerCase()))
   ), [relances, q, stat]);
+  const { page, setPage, pageCount, total: totalCount, pageItems, pageSize } = usePagination(filtered, 8);
 
   const total = relances.reduce((s, r) => s + r.montantDu, 0);
   const nbEscal = relances.filter((r) => r.statut === "Escaladé").length;
@@ -163,7 +166,7 @@ function RelancePage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filtered.map((r) => (
+                      {pageItems.map((r) => (
                         <TableRow key={r.id}>
                           <TableCell><div className="font-medium">{r.nom}</div><div className="text-xs text-muted-foreground">{r.telephone}</div></TableCell>
                           <TableCell className="text-sm">{r.formation}</TableCell>
@@ -191,6 +194,7 @@ function RelancePage() {
                     </TableBody>
                   </Table>
                 </div>
+                <DataPagination page={page} pageCount={pageCount} total={totalCount} pageSize={pageSize} onChange={setPage} label="dossiers" />
               </CardContent>
             </Card>
           </TabsContent>
@@ -277,25 +281,37 @@ function RelancePage() {
       </Dialog>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>{editing ? "Modifier" : "Nouveau"} dossier</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Nom</Label><Input value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} /></div>
-              <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-              <div><Label>Téléphone</Label><Input value={form.telephone} onChange={(e) => setForm({ ...form, telephone: e.target.value })} /></div>
-              <div><Label>Montant dû (MAD)</Label><Input type="number" value={form.montantDu} onChange={(e) => setForm({ ...form, montantDu: +e.target.value })} /></div>
-              <div><Label>Échéance</Label><Input type="date" value={form.dateEcheance} onChange={(e) => setForm({ ...form, dateEcheance: e.target.value })} /></div>
-              <div><Label>Statut</Label><Select value={form.statut} onValueChange={(v) => setForm({ ...form, statut: v as Relance["statut"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{statuts.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
-            </div>
-            <div><Label>Formation</Label>
-              <Select value={form.formation} onValueChange={(v) => setForm({ ...form, formation: v })}>
-                <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
-                <SelectContent>{formations.map((f) => <SelectItem key={f.id} value={f.nom}>{f.nom}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
+        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><DollarSign className="h-5 w-5 text-[color:var(--brand-accent)]" />{editing ? "Modifier le dossier" : "Nouveau dossier de relance"}</DialogTitle>
+            <DialogDescription>Créez un dossier de recouvrement suivi par l'agent IA</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5">
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><User className="h-3.5 w-3.5" />Famille débitrice</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Nom du parent</Label><Input value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} placeholder="M. / Mme Nom" /></div>
+                <div><Label className="text-xs flex items-center gap-1"><Mail className="h-3 w-3" />Email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="parent@email.com" /></div>
+                <div><Label className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />Téléphone</Label><Input value={form.telephone} onChange={(e) => setForm({ ...form, telephone: e.target.value })} placeholder="0661 ..." /></div>
+                <div><Label className="text-xs flex items-center gap-1"><GraduationCap className="h-3 w-3" />Formation</Label>
+                  <Select value={form.formation} onValueChange={(v) => setForm({ ...form, formation: v })}>
+                    <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
+                    <SelectContent>{formations.map((f) => <SelectItem key={f.id} value={f.nom}>{f.nom}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </section>
+
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><DollarSign className="h-3.5 w-3.5" />Montant & échéance</div>
+              <div className="grid grid-cols-3 gap-3">
+                <div><Label className="text-xs">Montant dû (MAD)</Label><Input type="number" min={0} value={form.montantDu} onChange={(e) => setForm({ ...form, montantDu: +e.target.value })} /></div>
+                <div><Label className="text-xs flex items-center gap-1"><CalendarClock className="h-3 w-3" />Échéance</Label><Input type="date" value={form.dateEcheance} onChange={(e) => setForm({ ...form, dateEcheance: e.target.value })} /></div>
+                <div><Label className="text-xs">Statut</Label><Select value={form.statut} onValueChange={(v) => setForm({ ...form, statut: v as Relance["statut"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{statuts.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
+              </div>
+            </section>
           </div>
-          <DialogFooter><Button className="btn-shine brand-gradient-warm text-white" onClick={save}>Enregistrer</Button></DialogFooter>
+          <DialogFooter><Button className="btn-shine brand-gradient-warm text-white shadow-elegant" onClick={save}>{editing ? "Enregistrer" : "Créer le dossier"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </>

@@ -15,9 +15,11 @@ import { Slider } from "@/components/ui/slider";
 import { dataStore, useData } from "@/lib/data-store";
 import { useCan, PermissionDenied } from "@/components/permission-guard";
 import type { Qualification } from "@/lib/mock-data";
-import { Search, Flame, Snowflake, ThermometerSun, Eye, Send, Plus, Pencil, Trash2, Phone, Mail, User, Wallet, GraduationCap, CalendarDays } from "lucide-react";
+import { Search, Flame, Snowflake, ThermometerSun, Eye, Send, Plus, Pencil, Trash2, Phone, Mail, User, Wallet, GraduationCap, CalendarDays, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { usePagination } from "@/hooks/use-pagination";
+import { DataPagination } from "@/components/data-pagination";
 
 export const Route = createFileRoute("/_app/qualification")({
   head: () => ({ meta: [{ title: "Qualification IA — Excel Academy" }] }),
@@ -57,6 +59,7 @@ function QualificationPage() {
     (formation === "all" || it.formation === formation) &&
     (q === "" || it.nom.toLowerCase().includes(q.toLowerCase()) || it.email.toLowerCase().includes(q.toLowerCase()) || it.telephone.includes(q))
   ), [qualifications, q, statut, formation]);
+  const { page, setPage, pageCount, total, pageItems, pageSize } = usePagination(filtered, 8);
 
   const openCreate = () => { setEditing(null); setForm(emptyForm()); setOpen(true); };
   const openEdit = (it: Qualification) => { setEditing(it); setForm(it); setOpen(true); setSel(null); };
@@ -126,7 +129,7 @@ function QualificationPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((it) => (
+                  {pageItems.map((it) => (
                     <TableRow key={it.id}>
                       <TableCell>
                         <div className="font-medium">{it.nom}</div>
@@ -168,6 +171,7 @@ function QualificationPage() {
                 </TableBody>
               </Table>
             </div>
+            <DataPagination page={page} pageCount={pageCount} total={total} pageSize={pageSize} onChange={setPage} label="prospects" />
           </CardContent>
         </Card>
       </main>
@@ -234,31 +238,47 @@ function QualificationPage() {
 
       {/* Create/Edit dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>{editing ? "Modifier" : "Nouveau"} prospect</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Nom</Label><Input value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} /></div>
-              <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-              <div><Label>Téléphone</Label><Input value={form.telephone} onChange={(e) => setForm({ ...form, telephone: e.target.value })} /></div>
-              <div><Label>Budget</Label><Input value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} placeholder="ex: 25-30k MAD" /></div>
-            </div>
-            <div><Label>Formation</Label>
-              <Select value={form.formation} onValueChange={(v) => setForm({ ...form, formation: v })}>
-                <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
-                <SelectContent>{formations.map((f) => <SelectItem key={f.id} value={f.nom}>{f.nom}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div><Label>Statut</Label>
-              <Select value={form.statut} onValueChange={(v) => setForm({ ...form, statut: v as Qualification["statut"] })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="Chaud">Chaud</SelectItem><SelectItem value="Tiède">Tiède</SelectItem><SelectItem value="Froid">Froid</SelectItem></SelectContent>
-              </Select>
-            </div>
-            <div><div className="flex justify-between mb-1"><Label>Score IA</Label><span className="text-sm font-bold text-[color:var(--brand)]">{form.score}</span></div><Slider value={[form.score]} onValueChange={(v) => setForm({ ...form, score: v[0] })} min={0} max={100} /></div>
-            <div><Label>Notes</Label><Textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-[color:var(--brand-accent)]" />{editing ? "Modifier le prospect" : "Nouveau prospect"}</DialogTitle>
+            <DialogDescription>Fiche qualifiée par l'agent IA — mise à jour manuelle possible</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5">
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><User className="h-3.5 w-3.5" />Identité</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Nom complet</Label><Input value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} placeholder="Sara Benjelloun" /></div>
+                <div><Label className="text-xs flex items-center gap-1"><Mail className="h-3 w-3" />Email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="sara@gmail.com" /></div>
+                <div><Label className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />Téléphone</Label><Input value={form.telephone} onChange={(e) => setForm({ ...form, telephone: e.target.value })} placeholder="0661 234 567" /></div>
+                <div><Label className="text-xs flex items-center gap-1"><Wallet className="h-3 w-3" />Budget</Label><Input value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} placeholder="ex: 25-30k MAD" /></div>
+              </div>
+            </section>
+
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><GraduationCap className="h-3.5 w-3.5" />Projet d'études</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Formation visée</Label>
+                  <Select value={form.formation} onValueChange={(v) => setForm({ ...form, formation: v })}>
+                    <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
+                    <SelectContent>{formations.map((f) => <SelectItem key={f.id} value={f.nom}>{f.nom}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div><Label className="text-xs">Statut du lead</Label>
+                  <Select value={form.statut} onValueChange={(v) => setForm({ ...form, statut: v as Qualification["statut"] })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="Chaud">🔥 Chaud</SelectItem><SelectItem value="Tiède">🌤️ Tiède</SelectItem><SelectItem value="Froid">❄️ Froid</SelectItem></SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div><div className="flex justify-between mb-1"><Label className="text-xs">Score IA</Label><span className="text-sm font-bold text-[color:var(--brand)]">{form.score}/100</span></div><Slider value={[form.score]} onValueChange={(v) => setForm({ ...form, score: v[0] })} min={0} max={100} /></div>
+            </section>
+
+            <section className="space-y-3 rounded-xl border bg-white/60 p-4">
+              <div className="text-xs font-semibold text-[color:var(--brand)] uppercase tracking-wider flex items-center gap-2"><CalendarDays className="h-3.5 w-3.5" />Notes de l'agent</div>
+              <Textarea rows={4} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Motivations, freins, prochaines actions..." />
+            </section>
           </div>
-          <DialogFooter><Button className="brand-gradient-warm text-white" onClick={save}>Enregistrer</Button></DialogFooter>
+          <DialogFooter><Button className="brand-gradient-warm text-white shadow-elegant" onClick={save}>{editing ? "Enregistrer" : "Créer le prospect"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </>
