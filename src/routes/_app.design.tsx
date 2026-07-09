@@ -378,3 +378,47 @@ function DesignPage() {
     </>
   );
 }
+
+function DesignGrid({ filtered, onSelect }: { filtered: Design[]; onSelect: (d: Design) => void }) {
+  const { page, setPage, pageCount, total, pageItems, pageSize } = usePagination(filtered, 9);
+  return (
+    <>
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {pageItems.map((d) => {
+          const Icon = typeIcon[d.type];
+          return (
+            <Card key={d.id} className="overflow-hidden hover:shadow-xl hover:-translate-y-0.5 transition cursor-pointer group flex flex-col" onClick={() => onSelect(d)}>
+              <div className="h-44 relative overflow-hidden bg-muted">
+                {d.imageUrl ? (
+                  <img src={d.imageUrl} alt={d.titre} loading="lazy" className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition duration-500" />
+                ) : (
+                  <div className="absolute inset-0 brand-gradient-mesh flex items-center justify-center">
+                    <Icon className="h-14 w-14 text-white/90 group-hover:scale-110 transition" />
+                  </div>
+                )}
+                <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 to-transparent" />
+                <div className="absolute top-2 left-2 flex gap-1">
+                  <Badge className="bg-white/95 text-foreground border-transparent shadow gap-1"><Icon className="h-3 w-3" />{d.type}</Badge>
+                </div>
+                <Badge className="absolute top-2 right-2 bg-white/95 text-foreground border-transparent shadow">{d.canal}</Badge>
+                <Badge variant="outline" className={"absolute bottom-2 right-2 " + statClr[d.statut]}>{d.statut}</Badge>
+              </div>
+              <CardContent className="pt-4 pb-4 space-y-2 flex-1 flex flex-col">
+                <div className="font-semibold text-sm leading-tight line-clamp-2">{d.titre}</div>
+                {d.slogan && <div className="text-xs italic text-[color:var(--brand-accent)] line-clamp-1">“{d.slogan}”</div>}
+                <div className="text-xs text-muted-foreground line-clamp-2 flex-1">{d.brief}</div>
+                <div className="flex flex-wrap gap-1 pt-1 border-t">
+                  <Badge variant="secondary" className="text-[10px] gap-1"><Target className="h-2.5 w-2.5" />{d.cible}</Badge>
+                  {d.dateEvenement && <Badge variant="secondary" className="text-[10px] gap-1"><Calendar className="h-2.5 w-2.5" />{d.dateEvenement}</Badge>}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+        {filtered.length === 0 && <p className="col-span-full text-center text-sm text-muted-foreground py-10">Aucun design</p>}
+      </div>
+      <DataPagination page={page} pageCount={pageCount} total={total} pageSize={pageSize} onChange={setPage} label="créations" />
+    </>
+  );
+}
+
